@@ -153,8 +153,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (intent.scheme == "https") {
-            vm.parseIntent(intent)
+        when (intent.scheme) {
+            "https", "openid4vp" -> vm.parseIntent(intent)
+            else -> Log.e(tagForLog, "Cannot handle ${intent.scheme}.")
         }
     }
 }
@@ -285,18 +286,22 @@ private fun createWebViewFactory(
                         Log.e(tagForLog, "Could not find activity for ${url}.", e)
                     }
 
-                    // assume external handling and immediately return to sender.
-                    return WebResourceResponse(
-                        "text/html",
-                        "utf-8",
-                        ByteArrayInputStream(
-                            """
+                    return if (url.scheme == "openid4vp") {
+                        response
+                    } else {
+                        // assume external handling and immediately return to sender.
+                        WebResourceResponse(
+                            "text/html",
+                            "utf-8",
+                            ByteArrayInputStream(
+                                """
                             <script language="JavaScript" type="text/javascript">
                                 setTimeout("window.history.back()", 1000);
                             </script>
                             """.trim().toByteArray()
+                            )
                         )
-                    )
+                    }
                 }
             }
         }

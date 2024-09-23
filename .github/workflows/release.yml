@@ -1,0 +1,88 @@
+name: Android Build and Publish
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on new tags (e.g., v1.0.0)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Test
+        run: ./gradlew test
+
+      - name: Assemble APKs
+        run: ./gradlew createReleaseNotes assemble
+
+      - name: Upload Release APK to Github Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: webview-debug.apk
+          path: webview/release/webview-release.apk
+
+      - name: Upload Debug APK to Github Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: webview-debug.apk
+          path: webview/build/outputs/apk/debug/*.apk
+
+      - name: Upload Yubikit Debug to Github Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: webview-yubikit.apk
+          path: webview/build/outputs/apk/yubikit/*.apk
+
+      - name: Create GitHub Release from File
+        id: create_release
+        uses: comnoco/create-release-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref_name }}
+          body_path: .release-note.md
+
+      - name: Upload Default Release APK
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: webview/release/webview-release.apk
+          asset_name: funke-wwwallet-${{ github.ref_name }}.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload Default Release APK
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: webview/build/outputs/apk/debug/webview-debug.apk
+          asset_name: funke-wwwallet-debug-${{ github.ref_name }}.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload Yubkit Release APK
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: webview/build/outputs/apk/yubikit/webview-yubikit.apk
+          asset_name: funke-wwwallet-yubikit-${{ github.ref_name }}.apk
+          asset_content_type: application/vnd.android.package-archive
+

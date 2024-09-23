@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "io.yubicolabs.funke_explorer",
+  "variantName": "debug",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "attributes": [],
+      "versionCode": 13,
+      "versionName": "0.0.13",
+      "outputFile": "webview-debug.apk"
+    }
+  ],
+  "elementType": "File",
+  "minSdkVersionForDexing": 33
+}

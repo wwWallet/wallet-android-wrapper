@@ -1,0 +1,3 @@
+[submodule "funke-wallet-frontend"]
+	path = funke-wallet-frontend
+	url = git@github.com:gunet/funke-wallet-frontend

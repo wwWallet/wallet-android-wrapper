@@ -294,5 +294,11 @@ createBluetoothMethod('bluetoothSendToClient')
 createBluetoothMethod('bluetoothReceiveFromClient')
 createBluetoothMethod('bluetoothReceiveFromServer')
 
+window.PublicKeyCredential = (function () { });
+window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable =
+    function () {
+        return Promise.resolve(false);
+    };
+
 // call out finalization
 console.log('injected!')

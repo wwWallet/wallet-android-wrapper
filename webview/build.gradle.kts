@@ -35,6 +35,12 @@ android {
             buildConfigField("Boolean", "SHOW_URL_ROW", "false")
             buildConfigField("Boolean", "USE_YUBIKIT", "false")
             buildConfigField("String", "BASE_URL", "\"https://funke.wwwallet.org\"")
+            buildConfigField("Boolean", "VISUALIZE_INJECTION", "false")
+            buildConfigField("Boolean", "SHOW_URL_ROW", "false")
+        }
+
+        create("yubikit") {
+            buildConfigField("Boolean", "USE_YUBIKIT", "true")
         }
 
         release {
@@ -43,11 +49,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("Boolean", "VISUALIZE_INJECTION", "false")
         }
 
         debug {
             buildConfigField("Boolean", "VISUALIZE_INJECTION", "true")
+            buildConfigField("Boolean", "SHOW_URL_ROW", "true")
         }
     }
 

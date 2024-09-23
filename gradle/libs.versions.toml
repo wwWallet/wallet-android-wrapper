@@ -42,6 +42,8 @@ ausweis = { group = "com.governikus.ausweisapp", name = "sdkwrapper", version.re
 yubikit-android = { group = "com.github.mariobodemann", name = "yubikit-android", version.ref = "yubikit" }
 logback = { group = "com.github.tony19", name = "logback-android", version.ref = "logback" }
 test-json = { group = "org.json", name = "json", version.ref = "test-json" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -7,7 +7,7 @@ funke and sprintd competition.
 Running
 -------
 
-You can install the Android app by either [Building](#Building) it, or by exploring this repositories [release apk](webview/release/webview-release.apk).
+You can install the Android app by either [Building](#Building) it, or by exploring this repositories [release apk](https://github.com/gunet/wwwallet-android-wrapper/releases).
 
 Building
 --------
@@ -21,6 +21,13 @@ git submodule update
 ```
 
 The above commands will build and install the Android application (apk) on all connected phones.
+
+
+Running
+-------
+
+Building
+--------
 
 
 Wrapping
