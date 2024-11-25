@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Funkeexplorer" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.Funkeexplorer.Dialog" parent="android:Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorAccent">#033175</item>
+        <item name="android:textColorPrimary">#141828</item>
+        <item name="android:background">#EBEAED</item>
+    </style>
+</resources>
