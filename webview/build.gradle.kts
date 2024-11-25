@@ -45,7 +45,7 @@ android {
         debug {
             buildConfigField("Boolean", "VISUALIZE_INJECTION", "true")
             buildConfigField("Boolean", "SHOW_URL_ROW", "false")
-            buildConfigField("Boolean", "USE_YUBIKIT", "true")
+            buildConfigField("Boolean", "USE_YUBIKIT", "false")
         }
     }
 
@@ -108,3 +108,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+
