@@ -2,7 +2,7 @@ FUNKE EXPLORER ANDROID
 ======================
 
 An Android native application wrapping `https://funke.wwwallet.org`. It is intended as a research project for the
-funke and sprintd competition.
+sprind funke competition.
 
 Running
 -------
