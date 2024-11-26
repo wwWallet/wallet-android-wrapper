@@ -77,6 +77,7 @@ class BleClientHandler(
                     Log.d(tagForLog, "Connected")
                     try {
                         gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
+                        gatt.requestMtu(517)
                         gatt.discoverServices()
 
                     } catch (e: SecurityException) {
