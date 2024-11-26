@@ -71,4 +71,4 @@ tasks.register<DefaultTask>("updateWalletFrontend") {
 }
 
 group = "yubico.labs"
-version = "0.0.7"
+version = "0.0.8"
