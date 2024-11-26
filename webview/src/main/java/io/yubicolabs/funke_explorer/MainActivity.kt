@@ -3,8 +3,8 @@ package io.yubicolabs.funke_explorer
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.UnsupportedSchemeException
 import android.net.http.SslError
 import android.os.Bundle
 import android.util.Log
@@ -35,7 +35,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -54,8 +53,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.webkit.WebSettingsCompat
-import androidx.webkit.WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_BROWSER
 import androidx.webkit.WebViewClientCompat
 import ch.qos.logback.classic.android.BasicLogcatConfigurator
 import io.yubicolabs.funke_explorer.bluetooth.BleClientHandler
@@ -67,7 +64,7 @@ import io.yubicolabs.funke_explorer.credentials.NavigatorCredentialsContainerAnd
 import io.yubicolabs.funke_explorer.credentials.NavigatorCredentialsContainerYubico
 import io.yubicolabs.funke_explorer.ui.theme.FunkeExplorerTheme
 import kotlinx.coroutines.Dispatchers
-import java.lang.UnsupportedOperationException
+import java.io.ByteArrayInputStream
 
 
 class MainActivity : ComponentActivity() {
@@ -266,9 +263,33 @@ private fun createWebViewFactory(
             } else {
                 ""
             }
-            Log.w("WEBVIEW:REQUEST!", "${request.method.uppercase()}: ${request.url}$responseLog")
 
-            return response
+            Log.i(
+                tagForLog,
+                "${request.method.uppercase()}: ${request.url}$responseLog"
+            )
+
+            return when (request.url.scheme) {
+                "http", "https" -> response
+
+                else -> {
+                    activity.startActivity(Intent(Intent.ACTION_VIEW, request.url))
+
+                    // assume external handling and immediately return to sender.
+                    return WebResourceResponse(
+                        "text/html",
+                        "utf-8",
+                        ByteArrayInputStream(
+                            """
+                            <script language="JavaScript" type="text/javascript">
+                                setTimeout("window.history.go(-1)", 1000);
+                            </script>
+                            """.trim().toByteArray()
+                        )
+                    )
+                }
+
+            }
         }
 
         override fun onPageFinished(view: WebView, url: String) {
