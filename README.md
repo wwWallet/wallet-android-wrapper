@@ -7,7 +7,7 @@ funke and sprintd competition.
 Running
 -------
 
-You can install the Android app by either [Building](#Building) it, or by exploring this repositories releases. You'd
+You can install the Android app by either [Building](#Building) it, or by exploring the prebuild [release apk](./webview/release/webview-release.apk). You'd
 need a yubikey security key to log into the wallet.
 
 Building
