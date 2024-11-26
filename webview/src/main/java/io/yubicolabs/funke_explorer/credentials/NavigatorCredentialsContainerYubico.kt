@@ -277,7 +277,6 @@ class NavigatorCredentialsContainerYubico(
             Log.e(tagForLog, "protocol exception: ${ctap.ctapError.toHumanReadable()}.", ctap)
             operation.failure(ctap)
         } finally {
-            // TODO THINK: WHY DO WE IGNORE CLIENT EXCEPTIONS HERE AND BUBBLE THEM UP INTO THE PIN CACHER FOR GET?
             // TODO: Think about cleanup
             lastOperation = null
             session.close()

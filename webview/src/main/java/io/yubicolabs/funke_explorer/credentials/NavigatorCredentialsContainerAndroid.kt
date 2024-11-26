@@ -7,13 +7,12 @@ import androidx.credentials.CreatePublicKeyCredentialRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetPublicKeyCredentialOption
+import androidx.credentials.PublicKeyCredential
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import kotlin.coroutines.EmptyCoroutineContext
 
-private const val AUTHENTICATION_RESPONSE_BUNDLE_KEY =
-    "androidx.credentials.BUNDLE_KEY_AUTHENTICATION_RESPONSE_JSON"
 private const val REGISTRATION_RESPONSE_BUNDLE_KEY =
     "androidx.credentials.BUNDLE_KEY_REGISTRATION_RESPONSE_JSON"
 
@@ -56,7 +55,11 @@ class NavigatorCredentialsContainerAndroid(
                     request = options.toGetRequestOption()
                 )
 
-                val rawResult = result.credential.data.getString(AUTHENTICATION_RESPONSE_BUNDLE_KEY)
+                val rawResult = if(result.credential is PublicKeyCredential) {
+                    (result.credential as PublicKeyCredential).authenticationResponseJson
+                } else {
+                    """ {"error":"no public key credential returned", "actual":"$result"} """.trim()
+                }
 
                 successCallback(JSONObject(rawResult))
             } catch (th: Throwable) {
