@@ -7,21 +7,25 @@ funke and sprintd competition.
 Running
 -------
 
-You can install the Android app by either [Building](#Building) it, or by exploring the prebuild [release apk](./webview/release/webview-release.apk). You'd
-need a yubikey security key to log into the wallet.
+You can install the Android app by either [Building](#Building) it, or by exploring the prebuild [release apk](./webview/release/webview-release.apk).
 
 Building
 --------
 
-This project uses gradle as a build tool and a submodule for the funke wallet frontend. (see [offline](#offline) for
-reasoning of having a submodule)
+This project uses `gradle` as the combined build tool. Please use the following command to build and install the android
+app to all phones attached to the computer issueing this command:
 
 ```shell
-git submodule update
 ./gradlew installDebug
 ```
 
-The above commands will build and install the Android application (apk) on all connected phones.
+or
+
+```shell
+gradlew.bat installDebug
+```
+
+on Windows
 
 
 Wrapping
