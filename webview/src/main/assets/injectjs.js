@@ -50,7 +50,6 @@ if (visualize) {
 function overrideNavigatorCredentialsWithBridgeCall(method) {
     navigator.credentials[method] = (options) => {
       var uuid = crypto.randomUUID()
-      console.log("Intercepted options:", JSON.stringify(options, null, 4))
 
       var promise = new Promise((resolve, reject) => {
         JAVASCRIPT_BRIDGE.__promise_cache__[uuid] = {'resolve':resolve, 'reject':reject, 'method': method}
@@ -70,8 +69,41 @@ function overrideNavigatorCredentialsWithBridgeCall(method) {
             }
         }
 
+        if (options.publicKey.hasOwnProperty('extensions') &&
+            options.publicKey.extensions.hasOwnProperty('prf') &&
+            options.publicKey.extensions.prf.hasOwnProperty('eval') &&
+            options.publicKey.extensions.prf.eval.hasOwnProperty('first') ) {
+            options.publicKey.extensions.prf.eval.first = __encode(options.publicKey.extensions.prf.eval.first)
+        }
+
+        if (options.publicKey.hasOwnProperty('extensions') &&
+            options.publicKey.extensions.hasOwnProperty('prf') &&
+            options.publicKey.extensions.prf.hasOwnProperty('evalByCredential') ) {
+            for (const k of Object.keys(options.publicKey.extensions.prf.evalByCredential)) {
+                if (options.publicKey.extensions.prf.evalByCredential[k].hasOwnProperty('first')) {
+                    options.publicKey.extensions.prf.evalByCredential[k].first = __encode(
+                        options.publicKey.extensions.prf.evalByCredential[k].first
+                    )
+                }
+                if (options.publicKey.extensions.prf.evalByCredential[k].hasOwnProperty('second')) {
+                    options.publicKey.extensions.prf.evalByCredential[k].second = __encode(
+                        options.publicKey.extensions.prf.evalByCredential[k].second
+                    )
+                }
+            }
+        }
+
+        if (options.publicKey.hasOwnProperty('extensions') &&
+            options.publicKey.extensions.hasOwnProperty('prf') &&
+            options.publicKey.extensions.prf.hasOwnProperty('eval') &&
+            options.publicKey.extensions.prf.eval.hasOwnProperty('second') ) {
+            options.publicKey.extensions.prf.eval.second = __encode(options.publicKey.extensions.prf.eval.second)
+        }
+
+
         // call bridge, JAVASCRIPT_BRIDGE.__resolve__(uid, ..) or JAVASCRIPT_BRIDGE.__reject__(uid,..) will be called back from android.
         var options_json = JSON.stringify(options, null, 4)
+        console.log('options:', options_json)
         JAVASCRIPT_BRIDGE[method](uuid, options_json)
       })
 
