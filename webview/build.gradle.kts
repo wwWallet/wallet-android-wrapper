@@ -21,8 +21,8 @@ android {
         applicationId = "io.yubicolabs.funke_explorer"
         minSdk = 33
         targetSdk = 35
-        versionCode = 10
-        versionName = "0.0.10"
+        versionCode = 11
+        versionName = "0.0.11"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
