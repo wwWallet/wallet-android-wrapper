@@ -2,6 +2,7 @@ package io.yubicolabs.funke_explorer
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -156,6 +157,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        if (intent.scheme == "https") {
+            vm.parseIntent(intent)
+        }
     }
 }
 
@@ -273,7 +278,11 @@ private fun createWebViewFactory(
                 "http", "https" -> response
 
                 else -> {
-                    activity.startActivity(Intent(Intent.ACTION_VIEW, request.url))
+                    try {
+                        activity.startActivity(Intent(Intent.ACTION_VIEW, request.url))
+                    } catch (e: ActivityNotFoundException) {
+                        Log.e(tagForLog, "Could not find activity for ${request.url}.", e)
+                    }
 
                     // assume external handling and immediately return to sender.
                     return WebResourceResponse(
