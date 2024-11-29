@@ -21,8 +21,8 @@ android {
         applicationId = "io.yubicolabs.funke_explorer"
         minSdk = 33
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.0.11"
+        versionCode = (property("wallet.versionCode") as String).toInt()
+        versionName = property("wallet.versionName") as String
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -31,6 +31,11 @@ android {
     }
 
     buildTypes {
+        all {
+            buildConfigField("Boolean", "SHOW_URL_ROW", "false")
+            buildConfigField("Boolean", "USE_YUBIKIT", "false")
+        }
+
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -38,14 +43,10 @@ android {
                 "proguard-rules.pro"
             )
             buildConfigField("Boolean", "VISUALIZE_INJECTION", "false")
-            buildConfigField("Boolean", "SHOW_URL_ROW", "false")
-            buildConfigField("Boolean", "USE_YUBIKIT", "false")
         }
 
         debug {
             buildConfigField("Boolean", "VISUALIZE_INJECTION", "true")
-            buildConfigField("Boolean", "SHOW_URL_ROW", "false")
-            buildConfigField("Boolean", "USE_YUBIKIT", "false")
         }
     }
 

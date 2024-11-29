@@ -36,7 +36,6 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-credentials-playservices = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
-
 coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 ausweis = { group = "com.governikus.ausweisapp", name = "sdkwrapper", version.ref = "ausweis" }

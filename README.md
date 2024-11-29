@@ -2,45 +2,41 @@ FUNKE EXPLORER ANDROID
 ======================
 
 An Android native application wrapping `https://funke.wwwallet.org`. It is intended as a research project for the
-sprind funke competition.
+funke and sprintd competition.
 
 Running
 -------
 
-You can install the Android app by either [Building](#Building) it, or by exploring the prebuild [release apk](./webview/release/webview-release.apk).
+You can install the Android app by either [Building](#Building) it, or by exploring this repositories releases. You'd
+need a yubikey security key to log into the wallet.
 
 Building
 --------
 
-This project uses `gradle` as the combined build tool. Please use the following command to build and install the android
-app to all phones attached to the computer issueing this command:
+This project uses gradle as a build tool and a submodule for the funke wallet frontend. (see [offline](#offline) for
+reasoning of having a submodule)
 
 ```shell
+git submodule update
 ./gradlew installDebug
 ```
 
-or
-
-```shell
-gradlew.bat installDebug
-```
-
-on Windows
+The above commands will build and install the Android application (apk) on all connected phones.
 
 
 Wrapping
 --------
 
-This Android application "wraps" the https://funke.wwwallet.org/ website, providing direct interaction with passkeys and
+This Android application "wraps" the https://funke.wwwallet.org/ website, providing direct interaction with Yubikeys and
 an initial set of bluetooth communication with a verifier. The wrapping happens by loading the website inside an Android
 native `WebView` and intercepting interesting js code calls and websides to be loaded.
 
 ### Wrapping JS in Kotlin / Android
 
 The aforementioned WebView is used to load the website and intercept not only a locally build version of the website,
-but also to catch and wrap incoming javascript calls dealing with passkeys and bluetooth communication. This is done, so
+but also to catch and wrap incoming javascript calls dealing with yubikeys and bluetooth communication. This is done, so
 the website can be augmented with native kotlin code directly interacting with hardware: On the one hand for
-communicating with password managers, but also for communicating with bluetooth.
+communicating with Yubikeys, but also for communicating with bluetooth.
 
 ### Alternatives to wrapping
 
@@ -84,8 +80,9 @@ the hardware details, libraries included and explored.
 ### Security Keys
 
 Making users phishing resistant is one of our goals, especially while interacting with private data as coming from a
-state issued id. Therefore, we opted to build a secure layer on top, in which we are leveraging passkeys for registering 
-and logging users in and to verify the presentation of digital documents by signing their validity.
+state issued id. Therefore, we opted to build a secure layer on top, in which we are leveraging device bound passkeys
+from yubico for registering and logging users in and to verify the presentation of digital documents by signing their
+validity.
 
 In order to use passkeys following the FIDO2 standard and some extensions, we needed to find a way to addresses this
 hardware from the wwallet frontend website through the wrapper.
@@ -96,18 +93,18 @@ When the user accesses our website for registering her accounts, she can either 
 build](https://github.com/Yubico/e9g-tla-firefox-hg2git), or rely on the wrapper of the Android App to ensure her data
 security, or consider a fallback trading security for convenience.
 
-If she takes the most secure route for her data, she will have a security hardware key that implements the FIDO2 standard and
+If she takes the most secure route for her data, she will have a security token that implements the FIDO2 standard and
 contains the PRF and SIGNING extensions. Once those conditions are met, she installs the app, registers, and the wallet
 will ask her to present her security key. This is done by calling `naviagtor.credentials.create` which will create
 secure credentials inside the browser.
 
 This is where the interaction with the wrapper starts: After the wrapper is initialized, it overwrites the
-`navibator.credentials.*` javascript API with it's own implementations.
+`navibator.credentials.*` javascript API with it's implementations.
 
 This is done by injecting an Android Native bridge, showing up as `nativeWrapper` for the javascript website, but also
 overwriting the aforementioned methods. Once the website calls those methods, the wrapper catches this call and
 redirects the creation options. These options are then sent to the native android
-SDK [credential manager](https://developer.android.com/identity/sign-in/credential-manager), which executes the request and responds with a
+SDK [yubikit-android](https://github.com/Yubico/yubikit-android), which executes the request and ideally response with a
 created credentials. Lastly the wrapped method will take the response from the SDK, and converts it into javascript
 native objects in JSON.
 
@@ -148,6 +145,17 @@ but sadly the number was not high enough to not exclude users without the needed
 Whereas the PRF extension already has some implementations, the SIGN extension is currently only available for use in
 this app, the iOS wallet proposal and our custom build of Firefox.
 
+### Yubico's SDK
+
+The Yubico SDK for Android [yubkit-android]((https://github.com/Yubico/yubikit-android) is used heavily for
+communicating, signing and verifying strong security when presenting documents or registering and signing into the funke
+wwwwallet frontend.
+See [NavigatorCredentialsContainerYubico](src/main/java/io/yubicolabs/funke_explorer/credentials/NavigatorCredentialsContainerYubico.kt),
+how the sdk is integrated.
+
+Alternatives for using Yubico's SDK was to either use the Android Platform FIDO2/ Webauthn implementation, but sadly
+this SDK was missing the required sing in extension and for convenience the NFC functionality to create a credential
+with a PIN.
 
 Presentment
 -----------
@@ -273,9 +281,9 @@ Learnings
 Additionally, to the learnings described in the chapters before, some tools and libraries need special mentioning since
 they allowed us to speed up development tremendously:
 
-* [jitpack](https://jitpack.io) a tool to integrate in development libraries and modules for Android apps, without needing to
+* [jitpack](jiptasfa) a tool to integrate in development libraries and modules for Android apps, without needing to
   host an own nexus or other in between releases maven dependency providers
-* [scrcpy](https://github.com/Genymobile/scrcpy) for sharing a connected Android app screen to desktop
+* [scrcpy](asdf) for sharing a connected Android app screen to desktop
 
 Next Steps
 ----------

@@ -130,6 +130,7 @@ class BleClientHandler(
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray
         ) {
+            Thread.sleep(100) // 👀 slow down communication
             super.onCharacteristicChanged(gatt, characteristic, value)
 
             if (characteristic.uuid == ServiceCharacteristic.ServerToClient.uuid) {
@@ -173,6 +174,7 @@ class BleClientHandler(
             characteristic: BluetoothGattCharacteristic?,
             status: Int
         ) {
+            Thread.sleep(100) // 👀 slow down communication
             super.onCharacteristicWrite(gatt, characteristic, status)
 
             state.let {
@@ -187,6 +189,13 @@ class BleClientHandler(
                             }
 
                             ServiceCharacteristic.ClientToServer.uuid -> {
+                                it.writeCallback?.invoke()
+                                state = it.copy(
+                                    writeCallback = null
+                                )
+                            }
+
+                            ServiceCharacteristic.State.uuid -> {
                                 it.writeCallback?.invoke()
                                 state = it.copy(
                                     writeCallback = null
