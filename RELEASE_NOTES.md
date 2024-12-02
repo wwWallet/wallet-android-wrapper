@@ -1,3 +1,11 @@
+# 0.0.13
+
+* Fix back button behaviour
+ * update state after `history.back()` got executed, otherwise compose doesn't pickup the next state change
+* Add handling of external links
+  * GitHub and Gunet open default browser now
+* minor polishing
+
 # 0.0.12
 
 * Slowdown of BLE communication
