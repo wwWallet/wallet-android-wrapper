@@ -56,7 +56,7 @@ class BleClientHandler(
     init {
         val bluetoothLeAvailable =
             activity.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
-        Log.d(tagForLog, "BluetoothLe is ${if (bluetoothLeAvailable) "" else "not"} available.")
+        Log.d(tagForLog, "BluetoothLe is ${if (bluetoothLeAvailable) "" else "not "}available.")
     }
 
     val manager: BluetoothManager = activity.getSystemService(BluetoothManager::class.java)

@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.net.http.SslError
 import android.os.Bundle
 import android.util.Log
@@ -101,16 +102,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         vm.activity = this // 👀 (NFC)
 
-        onBackPressedDispatcher.addCallback {
-            vm.onBackPressed()
-        }
+        onBackPressedDispatcher.addCallback(
+            owner = this
+        ) { vm.onBackPressed() }
 
         super.onCreate(savedInstanceState)
 
         setContent {
             FunkeExplorerTheme {
-                val url by vm.url.collectAsState()
-                val navigation by vm.navigation.collectAsState()
                 val urlRow by vm.showUrlRow.collectAsState()
 
                 Scaffold(
@@ -121,7 +120,7 @@ class MainActivity : ComponentActivity() {
                                     Text(text = stringResource(id = R.string.app_name))
                                 },
                                 actions = {
-                                    IconButton(onClick = { vm.reinjectAndroidBridge() }) {
+                                    IconButton(onClick = { vm.setUrl(BuildConfig.BASE_URL) }) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.baseline_refresh_24),
                                             contentDescription = null
@@ -143,11 +142,7 @@ class MainActivity : ComponentActivity() {
 
                         WebView(
                             activity = this@MainActivity,
-                            url = url,
-                            navigation = navigation,
-                            showUrlRow = {
-                                vm.showUrlRow(it)
-                            },
+                            vm = vm,
                             requestPermission = {
                                 val (input, granted, denied) = it
                                 this@MainActivity.requestPermission(input, granted, denied)
@@ -167,7 +162,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ColumnScope.UrlRow(vm: MainViewModel) {
     Row {
-        var tempUrl by remember { mutableStateOf("https://funke.wwwallet.org") }
+        var tempUrl by remember { mutableStateOf(BuildConfig.BASE_URL) }
         val keyboardController = LocalSoftwareKeyboardController.current
 
         TextField(
@@ -199,25 +194,25 @@ fun ColumnScope.UrlRow(vm: MainViewModel) {
 @Composable
 fun ColumnScope.WebView(
     activity: Activity,
-    url: String?,
-    navigation: String?,
-    showUrlRow: (Boolean) -> Unit,
+    vm: MainViewModel,
     requestPermission: (RequestPermissionParameters) -> Unit,
 ) {
+    val url by vm.url.collectAsState()
+
     AndroidView(
         modifier = Modifier.wrapContentHeight(
             align = Alignment.Top,
         ),
         factory = createWebViewFactory(
             activity = activity,
-            showUrlRow = showUrlRow,
+            showUrlRow = { vm.showUrlRow(it) },
             requestPermission = requestPermission
         ),
         update = { webView: WebView ->
             updateWebView(
                 webView = webView,
-                navigation = navigation,
                 url = url,
+                newUrlCallback = { vm.setUrl(it) },
             )
         }
     )
@@ -278,10 +273,16 @@ private fun createWebViewFactory(
                 "http", "https" -> response
 
                 else -> {
+                    val url = if (request.url.toString().startsWith("view://")) {
+                        Uri.parse(request.url.toString().replace("view://", "https://"))
+                    } else {
+                        request.url
+                    }
+
                     try {
-                        activity.startActivity(Intent(Intent.ACTION_VIEW, request.url))
+                        activity.startActivity(Intent(Intent.ACTION_VIEW, url))
                     } catch (e: ActivityNotFoundException) {
-                        Log.e(tagForLog, "Could not find activity for ${request.url}.", e)
+                        Log.e(tagForLog, "Could not find activity for ${url}.", e)
                     }
 
                     // assume external handling and immediately return to sender.
@@ -291,13 +292,12 @@ private fun createWebViewFactory(
                         ByteArrayInputStream(
                             """
                             <script language="JavaScript" type="text/javascript">
-                                setTimeout("window.history.go(-1)", 1000);
+                                setTimeout("window.history.back()", 1000);
                             </script>
                             """.trim().toByteArray()
                         )
                     )
                 }
-
             }
         }
 
@@ -305,6 +305,39 @@ private fun createWebViewFactory(
             super.onPageFinished(view, url)
 
             view.evaluateJavascript("$JAVASCRIPT_BRIDGE_NAME.inject()") {
+                // remove unwanted elements
+                for (unwanted in listOf(
+                    "menu-area", // pid issuer useless menu in wrapped mode
+                    "ReactModalPortal"
+                )) {
+                    view.evaluateJavascript(
+                        """
+                            while(document.getElementsByClassName('$unwanted').length > 0) {
+                                document.getElementsByClassName('$unwanted')[0].remove()
+                            }
+                        """.trimIndent()
+                    ) {
+                        Log.i(tagForLog, "Hardening: Deleted $unwanted class from html.")
+                    }
+                }
+
+                // remove links to foreign pages
+                for (unwanted in listOf(
+                    "github",
+                    "gunet",
+                )) {
+                    view.evaluateJavascript(
+                        """
+                        for (let elem of document.getElementsByTagName("a")) {
+                            if(elem.href.indexOf("$unwanted") > -1 && elem.href.indexOf("view://") == -1) {
+                                let old = elem.href
+                                elem.setAttribute('href', old.replace('https://','view://'))
+                                console.log("Hardening: Redirected from", old, "to", elem.href)
+                            }
+                        }
+                    """.trimIndent()
+                    ) {}
+                }
             }
         }
 
@@ -405,19 +438,32 @@ private fun createWebViewFactory(
 
 fun updateWebView(
     webView: WebView,
-    navigation: String?,
     url: String?,
+    newUrlCallback: (String) -> Unit
 ) {
     if (url?.isNotBlank() == true) {
-        webView.loadUrl(url)
-    }
+        if (url == "webview://back") {
+            webView.evaluateJavascript(
+                """
+                window.history.back()
+                document.location.href
+            """.trimIndent()
+            ) {
+                val newUrl = if (it.contains("\"")) {
+                    it.split("\"")[1]
+                } else {
+                    it
+                }
 
-    if (navigation == "back") {
-        webView.evaluateJavascript("history.back()") {}
+                Log.i(webView.tagForLog, "Reached $newUrl after back.")
+                newUrlCallback("")
+            }
+        } else {
+            webView.loadUrl(url)
+        }
+        webView.layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
     }
-
-    webView.layoutParams = ViewGroup.LayoutParams(
-        ViewGroup.LayoutParams.MATCH_PARENT,
-        ViewGroup.LayoutParams.MATCH_PARENT
-    )
 }

@@ -34,6 +34,7 @@ android {
         all {
             buildConfigField("Boolean", "SHOW_URL_ROW", "false")
             buildConfigField("Boolean", "USE_YUBIKIT", "false")
+            buildConfigField("String", "BASE_URL", "\"https://funke.wwwallet.org\"")
         }
 
         release {

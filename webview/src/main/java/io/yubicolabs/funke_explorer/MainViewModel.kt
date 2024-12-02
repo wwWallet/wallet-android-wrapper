@@ -15,29 +15,17 @@ import kotlin.coroutines.EmptyCoroutineContext
 class MainViewModel : ViewModel() {
     var activity: MainActivity? = null
 
-    private val _url: MutableStateFlow<String> = MutableStateFlow("https://funke.wwwallet.org")
+    private val _url: MutableStateFlow<String> = MutableStateFlow(BuildConfig.BASE_URL)
     var url: StateFlow<String?> = _url.asStateFlow()
-
-    private val _qrcode: MutableStateFlow<String?> = MutableStateFlow(null)
-    var qrcode: StateFlow<String?> = _qrcode.asStateFlow()
-
-    private val _navigation: MutableStateFlow<String> = MutableStateFlow("")
-    var navigation: StateFlow<String?> = _navigation.asStateFlow()
 
     private val _showUrlRow: MutableStateFlow<Boolean> = MutableStateFlow(false)
     var showUrlRow: StateFlow<Boolean> = _showUrlRow.asStateFlow()
-
-    fun reinjectAndroidBridge() {
-        _navigation.update {
-            "navigation"
-        }
-    }
 
     fun setUrl(url: String) {
         _url.update { "" }
 
         _url.update {
-            if (
+            if (url.isBlank() or
                 url.startsWith("http://") or
                 url.startsWith("https://")
             ) {
@@ -49,8 +37,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun onBackPressed() {
-        _navigation.update { "" }
-        _navigation.update { "back" }
+        _url.update { "webview://back" }
     }
 
     fun showUrlRow(visible: Boolean) {
