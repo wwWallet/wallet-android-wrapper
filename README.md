@@ -4,30 +4,24 @@ FUNKE EXPLORER ANDROID
 An Android native application wrapping `https://funke.wwwallet.org`. It is intended as a research project for the
 funke and sprintd competition.
 
+
 Running
 -------
 
-You can install the Android app by either [Building](#Building) it, or by exploring this repositories [release apk](https://github.com/gunet/wwwallet-android-wrapper/releases).
+You can install the Android app by either [Building](#Building) it, or by exploring this repositories [releasesk](https://github.com/gunet/wwwallet-android-wrapper/releases).
+
 
 Building
 --------
 
-This project uses gradle as a build tool and a submodule for the funke wallet frontend. (see [offline](#offline) for
-reasoning of having a submodule)
+This project uses gradle as a build tool:
 
 ```shell
-git submodule update
 ./gradlew installDebug
 ```
 
 The above commands will build and install the Android application (apk) on all connected phones.
 
-
-Running
--------
-
-Building
---------
 
 
 Wrapping
@@ -76,6 +70,7 @@ the end was rejected because of these reasons.
 Other solutions: We were also considering other alternatives, including less invasive versions as using Kotlin
 Multiplatform only for the hardware communication layer, but ultimately decided on using the wrapping approach since we
 seemed to have the right expertise onboard, and have explored similar options before.
+
 
 Wallet Frontend and Hardware interactions
 -----------------------------------------
@@ -243,35 +238,11 @@ For those situations, the wrapper needs to offer a minimum of functionality so t
 For obvious reasons the offline presentment requires that the user has logged in once before so that her data is
 availble to the wrapper and frontend.
 
-### `Capacitor`
-
 Inside the wrapper we already intercept JS calls to `navigator.credentials.create` and our own custom `nativeWrapper.*`,
 and additionally it is easy to intercept calls to open / request assets and new websites. In order to make the wrapper
 work offline, we have to intercept known url requests and deliver the known files. It is not dissimilar to hosting your
 own localhost version of the wwwwallet on Android, but without the actual webserver hosting part.
 
-While completely feasible to reimplement the file / url matching by hand, in this case we decided to use a tool
-called [capacitor]() for time and complexity sake.
-
-After making the source code of the wwwallet available as a git submodule
-under [funke-wwallet-frontend](./funke-wallet-frontend) we can use a combination of these building steps to build the
-website locally, expose it into the Android App, and inform the wrapper of the new frontend:
-
-```shell
-cd ./funke-wallet-frontend
-npm install
-yarn build
-npm install capacitor
-npx cap add android
-npx cap update
-```
-
-The plan is to also integrate those steps into the build process of the wrapper using the gradle task
-`updateWalletFrontend` so it could be automated, whenever the wrapper is build:
-
-```shell
-./gradlew updateWalletFrontend installDebug
-```
 
 ### Alternatives
 
@@ -286,10 +257,6 @@ Learnings
 
 Additionally, to the learnings described in the chapters before, some tools and libraries need special mentioning since
 they allowed us to speed up development tremendously:
-
-* [jitpack](jiptasfa) a tool to integrate in development libraries and modules for Android apps, without needing to
-  host an own nexus or other in between releases maven dependency providers
-* [scrcpy](asdf) for sharing a connected Android app screen to desktop
 
 Next Steps
 ----------
