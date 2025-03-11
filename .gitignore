@@ -16,4 +16,5 @@ local.properties
 .idea/
 node_modules
 package-lock.json
-funke-wallet-frontend
+.release-note.md
+

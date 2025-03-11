@@ -1,3 +1,9 @@
+# 0.0.14
+
+* fix for PRF exention
+* github action for building, testing and releasing
+ * available: release, debug, yubikit apks.
+
 # 0.0.13
 
 * Fix back button behaviour
