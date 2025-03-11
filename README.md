@@ -1,3 +1,5 @@
+[![Android Build and Publish](https://github.com/gunet/wwwallet-android-wrapper/actions/workflows/release.yml/badge.svg)](https://github.com/gunet/wwwallet-android-wrapper/actions/workflows/release.yml)
+
 FUNKE EXPLORER ANDROID
 ======================
 
@@ -8,7 +10,7 @@ funke and sprintd competition.
 Running
 -------
 
-You can install the Android app by either [Building](#Building) it, or by exploring this repositories [releasesk](https://github.com/gunet/wwwallet-android-wrapper/releases).
+You can install the Android app by either [Building](#building) it, or by exploring this repositories [releases](https://github.com/gunet/wwwallet-android-wrapper/releases/latest).
 
 
 Building
