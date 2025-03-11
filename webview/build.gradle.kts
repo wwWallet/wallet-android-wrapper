@@ -8,15 +8,6 @@ android {
     namespace = "io.yubicolabs.funke_explorer"
     compileSdk = 35
 
-    signingConfigs {
-        all {
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-            storePassword = "android"
-            storeFile = project.rootProject.file("funke.keystore")
-        }
-    }
-
     defaultConfig {
         applicationId = "io.yubicolabs.funke_explorer"
         minSdk = 33
@@ -30,6 +21,15 @@ android {
         }
     }
 
+    signingConfigs {
+        create("all") {
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+            storePassword = "android"
+            storeFile = project.rootProject.file("funke.keystore")
+        }
+    }
+
     buildTypes {
         all {
             buildConfigField("Boolean", "SHOW_URL_ROW", "false")
@@ -37,6 +37,8 @@ android {
             buildConfigField("String", "BASE_URL", "\"https://funke.wwwallet.org\"")
             buildConfigField("Boolean", "VISUALIZE_INJECTION", "false")
             buildConfigField("Boolean", "SHOW_URL_ROW", "false")
+
+            signingConfig = signingConfigs.getByName("all")
         }
 
         create("yubikit") {
