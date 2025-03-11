@@ -101,6 +101,29 @@ function overrideNavigatorCredentialsWithBridgeCall(method) {
         }
 
 
+        if (options.publicKey.hasOwnProperty('extensions') &&
+            options.publicKey.extensions.hasOwnProperty('sign') &&
+            options.publicKey.extensions.sign.hasOwnProperty('generateKey') &&
+            options.publicKey.extensions.sign.generateKey.hasOwnProperty('phData') ) {
+            options.publicKey.extensions.sign.generateKey.phData = __encode(options.publicKey.extensions.sign.generateKey.phData)
+        }
+
+        if (options.publicKey.hasOwnProperty('extensions') &&
+            options.publicKey.extensions.hasOwnProperty('sign') &&
+            options.publicKey.extensions.sign.hasOwnProperty('sign') &&
+            options.publicKey.extensions.sign.sign.hasOwnProperty('phData') ) {
+            options.publicKey.extensions.sign.sign.phData = __encode(options.publicKey.extensions.sign.sign.phData)
+        }
+
+        if (options.publicKey.hasOwnProperty('extensions') &&
+            options.publicKey.extensions.hasOwnProperty('sign') &&
+            options.publicKey.extensions.sign.hasOwnProperty('sign') &&
+            options.publicKey.extensions.sign.sign.hasOwnProperty('keyHandleByCredential')) {
+          for (const k of Object.keys(options.publicKey.extensions.sign.sign.keyHandleByCredential)) {
+              options.publicKey.extensions.sign.sign.keyHandleByCredential[k] = __encode(options.publicKey.extensions.sign.sign.keyHandleByCredential[k]);
+          }
+        }
+
         // call bridge, JAVASCRIPT_BRIDGE.__resolve__(uid, ..) or JAVASCRIPT_BRIDGE.__reject__(uid,..) will be called back from android.
         var options_json = JSON.stringify(options, null, 4)
         console.log('options:', options_json)
