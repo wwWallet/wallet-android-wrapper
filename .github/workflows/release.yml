@@ -7,7 +7,7 @@ on:
   push:
     tags:
       - 'v*' # Trigger on new tags (e.g., v1.0.0)
-  repository_dispatch:
+  workflow_dispatch:
     inputs:
       reason:
         description: Why did you trigger this workflow run manually?
