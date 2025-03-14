@@ -10,7 +10,7 @@ funke and sprintd competition.
 Running
 -------
 
-You can install the Android app by either [Building](#building) it, or by exploring this repositories [releases](https://github.com/gunet/wwwallet-android-wrapper/releases/latest).
+You can install the Android app by either [Building](#building) it, or by exploring this repositories [releases](https://github.com/wwWallet/wwwallet-android-wrapper/releases/latest).
 
 
 Building
