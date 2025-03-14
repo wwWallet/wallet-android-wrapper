@@ -7,6 +7,13 @@ on:
   push:
     tags:
       - 'v*' # Trigger on new tags (e.g., v1.0.0)
+  repository_dispatch:
+    inputs:
+      reason:
+        description: Why did you trigger this workflow run manually?
+        required: true
+        default: Needing a new build.
+        type: string
 
 jobs:
   release:
