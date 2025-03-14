@@ -1,4 +1,4 @@
-[![Android Build and Publish](https://github.com/gunet/wwwallet-android-wrapper/actions/workflows/release.yml/badge.svg)](https://github.com/gunet/wwwallet-android-wrapper/actions/workflows/release.yml)
+[![Android Build and Publish](https://github.com/wwWallet/wwwallet-android-wrapper/actions/workflows/release.yml/badge.svg)](https://github.com/wwWallet/wwwallet-android-wrapper/actions/workflows/release.yml)
 
 FUNKE EXPLORER ANDROID
 ======================
