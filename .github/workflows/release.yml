@@ -14,6 +14,11 @@ on:
         required: true
         default: Needing a new build.
         type: string
+      tag:
+        description: Which tag to build from?
+        required: true
+        default: v0.0.14
+        type: string
 
 jobs:
   release:
@@ -42,6 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
+          tag_name: ${{ input.tag || github.ref }}
           release_name: Release ${{ github.ref_name }}
           body_path: .release-note.md
 
