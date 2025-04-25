@@ -105,6 +105,8 @@ dependencies {
     implementation(libs.webkit)
     implementation(libs.ausweis)
     implementation(libs.yubikit.android)
+    implementation(libs.yubikit.fido)
+    implementation(libs.softauth)
     implementation(libs.logback)
 
     testImplementation(libs.junit)
@@ -114,6 +116,8 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
