@@ -134,7 +134,7 @@ function overrideNavigatorCredentialsWithBridgeCall(method) {
     }
 }
 
-function __encode(buffer) {
+function __encode(buffer {
     return btoa(
         Array.from(
             new Uint8Array(buffer),
