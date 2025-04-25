@@ -80,11 +80,19 @@ android {
 
     packaging {
         resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/{AL2.0,LGPL2.1,DEPENDENCIES}"
+            excludes += "COPYING"
         }
 
         jniLibs {
             useLegacyPackaging = true
+        }
+    }
+
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+            isIncludeAndroidResources = true
         }
     }
 }
