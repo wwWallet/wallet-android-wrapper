@@ -6,7 +6,7 @@
  * injection.
  */
 
-// check if replaced in Android: if not defined, throws an 'ReferenceError`.
+// check if replaced in Android: if not defined, throws an 'ReferenceError'.
 JAVASCRIPT_BRIDGE
 
 // optionally replaced in android: if not defined no visualization
@@ -134,7 +134,7 @@ function overrideNavigatorCredentialsWithBridgeCall(method) {
     }
 }
 
-function __encode(buffer {
+function __encode(buffer) {
     return btoa(
         Array.from(
             new Uint8Array(buffer),
