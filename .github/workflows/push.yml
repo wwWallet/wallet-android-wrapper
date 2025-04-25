@@ -1,0 +1,38 @@
+name: Android Build and Publish
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why did you trigger this workflow run manually?
+        required: true
+        default: Needing a new build.
+        type: string
+      tag:
+        description: Which tag to build from?
+        required: true
+        default: v0.0.14
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Test
+        run: ./gradlew clean check
