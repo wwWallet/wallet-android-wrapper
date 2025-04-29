@@ -14,6 +14,11 @@ private const val HIDE_URL_ROW = "Hide URL Row"
 private const val SEND_FEEDBACK = "Send Feedback"
 private const val SHOW_VERSION = "Version ${BuildConfig.VERSION_NAME} @ ${BuildConfig.VERSION_CODE}"
 
+private const val OVERRIDE_HINT_WITH_SECURITY_KEY = "Override credential option hint with 'security-key'"
+private const val OVERRIDE_HINT_WITH_CLIENT_DEVICE = "Override credential option hint with 'client-device'"
+private const val OVERRIDE_HINT_WITH_EMULATOR = "Override credential option hint with 'emulator'"
+private const val DO_NOT_OVERRIDE_HINT = "Don't override credential option hints."
+
 private const val BLE_SET_MODE_MDOC = "mDoc Mode"
 private const val BLE_SET_MODE_READER = "mDoc Reader Mode (DEFAULT)"
 
@@ -36,33 +41,41 @@ class DebugMenuHandler(
     val context: Context,
     val showUrlRow: (Boolean) -> Unit,
 ) {
+    private var maxSeparatorsCount = 1;
     private val actions: Map<String, (JSExecutor) -> Unit> = mapOf(
         SHOW_URL_ROW to { js -> showUrlRow(true) },
         HIDE_URL_ROW to { js -> showUrlRow(false) },
 
-        LIST_SEPARATOR * 1 to {},
+        LIST_SEPARATOR * maxSeparatorsCount++ to {},
+
+        OVERRIDE_HINT_WITH_SECURITY_KEY to { it("$JAVASCRIPT_BRIDGE_NAME.__override_hints = ['security-key']"){} },
+        OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.__override_hints = ['client-device']"){} },
+        OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.__override_hints = ['emulator']"){} },
+        DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.__override_hints = []"){} },
+
+        LIST_SEPARATOR * maxSeparatorsCount++ to {},
 
         BLE_SET_MODE_MDOC to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothSetMode(\"MDoc\")") {} },
         BLE_SET_MODE_READER to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothSetMode(\"MDocReader\")") {} },
 
-        LIST_SEPARATOR * 2 to {},
+        LIST_SEPARATOR * maxSeparatorsCount++ to {},
 
         BLE_CREATE_SERVER to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothCreateServer(\"00179c7a-eec6-4f88-8646-045fda9ac4d8\").then(r=>console.log(r))") {} },
         BLE_SEND_TO_CLIENT to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothSendToClient([1,2,3,4,5,6]).then(r=>console.log(r))") {} },
         BLE_RECEIVE_FROM_CLIENT to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothReceiveFromClient().then(r=>alert(r))") {} },
 
-        LIST_SEPARATOR * 3 to {},
+        LIST_SEPARATOR * maxSeparatorsCount++ to {},
 
         BLE_CREATE_CLIENT to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothCreateClient(\"00179c7a-eec6-4f88-8646-045fda9ac4d8\").then(r=>alert(r))") {} },
         BLE_SEND_TO_SERVER to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothSendToServer([6,5,4,3,2,1]).then(r=>alert(r))") {} },
         BLE_RECEIVE_FROM_SERVER to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothReceiveFromServer().then(r=>alert(r))") {} },
 
-        LIST_SEPARATOR * 4 to {},
+        LIST_SEPARATOR * maxSeparatorsCount++ to {},
 
         BLE_STATUS to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothStatus().then(r=>alert(r))") {} },
         BLE_TERMINATE to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothTerminate().then(r=>alert(r))") {} },
 
-        LIST_SEPARATOR * 5 to {},
+        LIST_SEPARATOR * maxSeparatorsCount++ to {},
 
         SEND_FEEDBACK to { js ->
             js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__.map( (x,i)=> i + \": \" + x).join('\\n')") { it ->
@@ -105,7 +118,7 @@ class DebugMenuHandler(
             ) { dialog, which ->
                 val key = items[which]
                 if (key in actions) {
-                    jsExecutor("console.log('Debug Menu $key pressed')") {}
+                    jsExecutor("console.log(`Debug Menu $key pressed`)") {}
                     actions[key]!!(jsExecutor)
                 } else {
                     jsExecutor("window.alert('Option $which (${items[which]}) is not implemented.')") {}

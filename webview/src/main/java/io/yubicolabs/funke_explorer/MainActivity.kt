@@ -64,6 +64,7 @@ import io.yubicolabs.funke_explorer.bridging.WalletJsBridge
 import io.yubicolabs.funke_explorer.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 import io.yubicolabs.funke_explorer.credentials.NavigatorCredentialsContainerAndroid
 import io.yubicolabs.funke_explorer.credentials.NavigatorCredentialsContainerYubico
+import io.yubicolabs.funke_explorer.credentials.SoftwareCredentialsContainer
 import io.yubicolabs.funke_explorer.ui.theme.FunkeExplorerTheme
 import kotlinx.coroutines.Dispatchers
 import java.io.ByteArrayInputStream
@@ -415,15 +416,13 @@ private fun createWebViewFactory(
         WalletJsBridge(
             webView,
             Dispatchers.Main,
-            if (BuildConfig.USE_YUBIKIT == true) {
-                NavigatorCredentialsContainerYubico(
-                    activity = activity
-                )
-            } else {
-                NavigatorCredentialsContainerAndroid(
-                    activity = activity
-                )
-            },
+            NavigatorCredentialsContainerYubico(
+                activity = activity
+            ),
+            NavigatorCredentialsContainerAndroid(
+                activity = activity
+            ),
+            SoftwareCredentialsContainer(),
             BleClientHandler(
                 activity = activity,
             ),
