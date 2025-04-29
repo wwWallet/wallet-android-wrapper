@@ -33,16 +33,11 @@ android {
     buildTypes {
         all {
             buildConfigField("Boolean", "SHOW_URL_ROW", "false")
-            buildConfigField("Boolean", "USE_YUBIKIT", "false")
-            buildConfigField("String", "BASE_URL", "\"https://funke.wwwallet.org\"")
+            buildConfigField("String", "BASE_URL", "\"https://demo.wwwallet.org\"")
             buildConfigField("Boolean", "VISUALIZE_INJECTION", "false")
             buildConfigField("Boolean", "SHOW_URL_ROW", "false")
 
             signingConfig = signingConfigs.getByName("all")
-        }
-
-        create("yubikit") {
-            buildConfigField("Boolean", "USE_YUBIKIT", "true")
         }
 
         release {
