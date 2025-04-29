@@ -9,17 +9,22 @@ import io.yubicolabs.funke_explorer.bluetooth.BleClientHandler
 import io.yubicolabs.funke_explorer.bluetooth.BleServerHandler
 import io.yubicolabs.funke_explorer.bluetooth.ServiceCharacteristic
 import io.yubicolabs.funke_explorer.credentials.NavigatorCredentialsContainer
+import io.yubicolabs.funke_explorer.json.setNested
+import io.yubicolabs.funke_explorer.json.toList
 import io.yubicolabs.funke_explorer.tagForLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import kotlin.coroutines.EmptyCoroutineContext
 
 class WalletJsBridge(
     private val webView: WebView,
     private val dispatcher: CoroutineDispatcher,
-    private val credentialsContainer: NavigatorCredentialsContainer,
+    private val securityKeyCredentialsContainer: NavigatorCredentialsContainer,
+    private val clientDeviceCredentialsContainer: NavigatorCredentialsContainer,
+    private val emulatedCredentialsContainer: NavigatorCredentialsContainer,
     private val bleClientHandler: BleClientHandler,
     private val bleServerHandler: BleServerHandler,
     private val debugMenuHandler: DebugMenuHandler
@@ -27,6 +32,42 @@ class WalletJsBridge(
     companion object {
         const val JAVASCRIPT_BRIDGE_NAME = "nativeWrapper"
     }
+
+    private fun credentialsContainerByOption(mappedOptions: JSONObject): NavigatorCredentialsContainer =
+        try {
+            val hints: List<String> =
+                mappedOptions.getJSONObject("publicKey").getJSONArray("hints").toList()
+                    .mapNotNull { it as? String }
+
+            var selectedContainer: NavigatorCredentialsContainer? = null
+            for (hint in hints) {
+                selectedContainer = when (hint) {
+                    "security-key" -> securityKeyCredentialsContainer
+                    "client-device" -> clientDeviceCredentialsContainer
+                    "emulator" -> emulatedCredentialsContainer
+                    "hybrid" -> null // explicitly not supported
+                    else -> {
+                        // error case unknown hint.
+                        Log.e(tagForLog, "Hint '$hint' not supported. Ignoring.")
+                        null
+                    }
+                }
+
+                if (selectedContainer != null) {
+                    break
+                }
+            }
+
+            selectedContainer ?: securityKeyCredentialsContainer
+        } catch (jsonException: JSONException) {
+            Log.e(
+                tagForLog,
+                "'hints' field in credential options not found, defaulting back to 'security-key'.",
+                jsonException
+            )
+            securityKeyCredentialsContainer
+        }
+
 
     /**
      * Call this to overwrite the `navigator.credentials.[get|create]` methods.
@@ -36,7 +77,7 @@ class WalletJsBridge(
     fun inject() {
         Log.i(
             tagForLog,
-            "Adding `${credentialsContainer.javaClass.simpleName}` as `$JAVASCRIPT_BRIDGE_NAME` to JS."
+            "Adding `${javaClass.simpleName}` as `$JAVASCRIPT_BRIDGE_NAME` to JS."
         )
 
         dispatcher.dispatch(EmptyCoroutineContext) {
@@ -74,35 +115,40 @@ class WalletJsBridge(
         promiseUuid: String,
         options: String
     ) {
-        Log.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.create($promiseUuid, $options) called.")
+        val mappedOptions = JSONObject(options)
+        mappedOptions.setNested("publicKey.attestation", "none")
+        Log.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.create($promiseUuid, ${mappedOptions.toString(2)}) called.")
 
-        val typedOptions = JSONObject(options)
+        credentialsContainerByOption(mappedOptions)
+            .create(
+                options = mappedOptions,
+                failureCallback = { th ->
+                    Log.e(tagForLog, "Creation failed.", th)
 
-        credentialsContainer.create(options = typedOptions, failureCallback = { th ->
-            Log.e(tagForLog, "Creation failed.", th)
-
-            dispatcher.dispatch(EmptyCoroutineContext) {
-                webView.evaluateJavascript(
-                    """
+                    dispatcher.dispatch(EmptyCoroutineContext) {
+                        webView.evaluateJavascript(
+                            """
                             console.log('credential creation failed', JSON.stringify("$th"))
                             alert('Credential creation failed: ' + JSON.stringify("${th.localizedMessage}"))
                             $JAVASCRIPT_BRIDGE_NAME.__reject__("$promiseUuid", JSON.stringify("$th"));
                         """.trimIndent()
-                ) {}
-            }
-        }, successCallback = { response ->
-            Log.i(tagForLog, "Creation succeeded with $response.")
+                        ) {}
+                    }
+                },
+                successCallback = { response ->
+                    Log.i(tagForLog, "Creation succeeded with $response.")
 
-            dispatcher.dispatch(EmptyCoroutineContext) {
-                webView.evaluateJavascript(
-                    """
+                    dispatcher.dispatch(EmptyCoroutineContext) {
+                        webView.evaluateJavascript(
+                            """
                             var response = JSON.parse('$response')
                             console.log('credential created', response)
                             $JAVASCRIPT_BRIDGE_NAME.__resolve__("$promiseUuid", response);
                         """.trimIndent()
-                ) {}
-            }
-        })
+                        ) {}
+                    }
+                }
+            )
     }
 
     @JavascriptInterface
@@ -112,33 +158,39 @@ class WalletJsBridge(
         options: String
     ) {
         Log.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.get($promiseUuid, $options) called.")
-        val typedOptions = JSONObject(options)
 
-        credentialsContainer.get(options = typedOptions, failureCallback = { th ->
-            Log.e(tagForLog, "Get failed.", th)
+        val mappedOptions = JSONObject(options)
+        mappedOptions.setNested("publicKey.attestation", "none")
+        credentialsContainerByOption(mappedOptions)
+            .get(
+                options = mappedOptions,
+                failureCallback = { th ->
+                    Log.e(tagForLog, "Get failed.", th)
 
-            dispatcher.dispatch(EmptyCoroutineContext) {
-                webView.evaluateJavascript(
-                    """
+                    dispatcher.dispatch(EmptyCoroutineContext) {
+                        webView.evaluateJavascript(
+                            """
                             console.log('credential getting failed', JSON.stringify("$th"))
                             alert('Credential getting failed: ' + JSON.stringify("${th.localizedMessage}"))
                             $JAVASCRIPT_BRIDGE_NAME.__reject__("$promiseUuid", JSON.stringify("$th"));
                         """.trimIndent()
-                ) {}
-            }
-        }, successCallback = { response ->
-            Log.i(tagForLog, "Get succeeded with $response.")
+                        ) {}
+                    }
+                },
+                successCallback = { response ->
+                    Log.i(tagForLog, "Get succeeded with $response.")
 
-            dispatcher.dispatch(EmptyCoroutineContext) {
-                webView.evaluateJavascript(
-                    """
+                    dispatcher.dispatch(EmptyCoroutineContext) {
+                        webView.evaluateJavascript(
+                            """
                             var response = JSON.parse('$response')
                             console.log('credential getted', response)
                             $JAVASCRIPT_BRIDGE_NAME.__resolve__("$promiseUuid", response);
                         """.trimIndent()
-                ) {}
-            }
-        })
+                        ) {}
+                    }
+                }
+            )
     }
 
     @JavascriptInterface

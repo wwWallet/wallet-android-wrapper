@@ -46,6 +46,9 @@ if (visualize) {
     }
 }
 
+// override incoming hint
+JAVASCRIPT_BRIDGE.__override_hints = []
+
 // override functions on navigator
 function overrideNavigatorCredentialsWithBridgeCall(method) {
     navigator.credentials[method] = (options) => {
@@ -53,6 +56,10 @@ function overrideNavigatorCredentialsWithBridgeCall(method) {
 
       var promise = new Promise((resolve, reject) => {
         JAVASCRIPT_BRIDGE.__promise_cache__[uuid] = {'resolve':resolve, 'reject':reject, 'method': method}
+
+        if (JAVASCRIPT_BRIDGE.__override_hints.length > 0) {
+            options.publicKey['hints'] = JAVASCRIPT_BRIDGE.__override_hints
+        }
 
         if (options.publicKey.hasOwnProperty('challenge')) {
             options.publicKey.challenge = __encode(options.publicKey.challenge)
