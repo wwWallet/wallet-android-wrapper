@@ -1,3 +1,8 @@
+# 0.0.15
+
+* stability improvements
+* add 'hints' to select from platform authenticator (android sdk) or security key authenticator (yubikit sdk).
+
 # 0.0.14
 
 * fix for PRF extension
