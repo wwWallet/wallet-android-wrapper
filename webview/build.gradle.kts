@@ -50,7 +50,6 @@ android {
 
         debug {
             buildConfigField("Boolean", "VISUALIZE_INJECTION", "true")
-            buildConfigField("Boolean", "SHOW_URL_ROW", "true")
         }
     }
 
