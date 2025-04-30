@@ -18,7 +18,7 @@ class MainViewModel : ViewModel() {
     private val _url: MutableStateFlow<String> = MutableStateFlow(BuildConfig.BASE_URL)
     var url: StateFlow<String?> = _url.asStateFlow()
 
-    private val _showUrlRow: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    private val _showUrlRow: MutableStateFlow<Boolean> = MutableStateFlow(BuildConfig.SHOW_URL_ROW)
     var showUrlRow: StateFlow<Boolean> = _showUrlRow.asStateFlow()
 
     fun setUrl(url: String) {

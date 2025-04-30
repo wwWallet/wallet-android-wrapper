@@ -137,7 +137,7 @@ class MainActivity : ComponentActivity() {
                             .padding(paddingValues)
                             .fillMaxHeight()
                     ) {
-                        if (BuildConfig.SHOW_URL_ROW || urlRow) {
+                        if (urlRow) {
                             UrlRow(vm)
                         }
 
