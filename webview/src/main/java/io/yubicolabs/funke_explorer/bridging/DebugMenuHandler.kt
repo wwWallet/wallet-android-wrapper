@@ -83,26 +83,14 @@ class DebugMenuHandler(
         LIST_SEPARATOR * maxSeparatorsCount++ to {},
 
         SEND_FEEDBACK to { js ->
-            js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__.map( (x,i)=> i + \": \" + x).join('\\n')") { it ->
-                Log.d(tagForLog, it)
-
-                val body =
-                    "Hey funke wallet explorer team,\n\nI found the following issue on version ${BuildConfig.VERSION_NAME}:\n<DETAILED DESCRIPTION>\nGreetings,\n<NAME>\n\n=======\nLOGS\n${
-                        it.replace(
-                            "\\n",
-                            "\n"
-                        )
-                    }"
-
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    setType("text/html")
-                    putExtra(Intent.EXTRA_EMAIL, arrayOf("mario.bodemann@yubico.com"))
-                    putExtra(Intent.EXTRA_SUBJECT, "Feedback to funkeexplorer android wrapper")
-                    putExtra(Intent.EXTRA_HTML_TEXT, body)
-                    putExtra(Intent.EXTRA_TEXT, body) // fallback
-                }
-
-                context.startActivity(intent)
+            js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
+                val jsonArray = JSONArray(logsJson.replace(":,", ":\"\""))
+                val logs = jsonArray.toList().map { "$it" }
+                val body = createGitHubIssueBody(logs)
+                val title = "Wwwwallet wrapper issue"
+                val uri =
+                    "https://github.com/wwWallet/wwwallet-android-wrapper/issues/new?title=${title}&body=${body.urlSafe()}".toUri()
+                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
             }
         },
 
@@ -143,3 +131,35 @@ class DebugMenuHandler(
 
 private operator fun String.times(times: Int): String =
     (0 until times).joinToString(separator = "") { this }
+
+private fun createGitHubIssueBody(logs: List<String>): String {
+    val digits = log10(logs.size.toFloat()).nextUp().toInt() + 1
+
+    return """Hey wwwallet team,
+                           
+    I found the following issue on version ${BuildConfig.VERSION_NAME}:
+    
+    Description
+    1. I opened the app
+    2. ....
+    
+    Expectation
+    1. ...
+    
+    Greetings,
+
+    <details><summary>Wwallet Log</summary>
+
+    ```
+    ${
+        logs.mapIndexed { index, line ->
+            "${"%0${digits}d".format(index + 1)}: $line"
+        }.joinToString("\n")
+    }
+    ```
+    </table>
+    </details> 
+""".lines().joinToString("\n") { it.trim() }
+}
+
+private fun String.urlSafe() = java.net.URLEncoder.encode(this, "utf-8")
