@@ -14,6 +14,7 @@ import android.widget.EditText
 import android.widget.TextView
 import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
+import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
@@ -72,11 +73,15 @@ class NavigatorCredentialsContainerYubico(
             usbListener
         )
 
-        manager.startNfcDiscovery(
-            NfcConfiguration().timeout(10_000),
-            activity,
-            nfcListener
-        )
+        try {
+            manager.startNfcDiscovery(
+                NfcConfiguration().timeout(10_000),
+                activity,
+                nfcListener
+            )
+        } catch (e: NfcNotAvailable) {
+            Log.i(tagForLog, "No NFC, ignoring.", e)
+        }
     }
 
     private var lastOperation: Operation? = null
