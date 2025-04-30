@@ -14,27 +14,12 @@ import kotlin.math.nextUp
 
 private const val SHOW_URL_ROW = "Show URL Row"
 private const val HIDE_URL_ROW = "Hide URL Row"
-private const val SEND_FEEDBACK = "Give Feedback"
-private const val SHOW_VERSION = "Version ${BuildConfig.VERSION_NAME} @ ${BuildConfig.VERSION_CODE}"
+private const val SEND_FEEDBACK = "Give Feedback (Version ${BuildConfig.VERSION_NAME})"
 
 private const val OVERRIDE_HINT_WITH_SECURITY_KEY = "Set hints to ['security-key']"
 private const val OVERRIDE_HINT_WITH_CLIENT_DEVICE = "Set hints to ['client-device']"
 private const val OVERRIDE_HINT_WITH_EMULATOR = "Set hints to ['emulator']"
 private const val DO_NOT_OVERRIDE_HINT = "Reset hints"
-
-private const val BLE_SET_MODE_MDOC = "mDoc Mode"
-private const val BLE_SET_MODE_READER = "mDoc Reader Mode (DEFAULT)"
-
-private const val BLE_CREATE_SERVER = "SERVER: Create"
-private const val BLE_SEND_TO_CLIENT = "SERVER: Send"
-private const val BLE_RECEIVE_FROM_CLIENT = "SERVER: Receive"
-
-private const val BLE_CREATE_CLIENT = "CLIENT: Create"
-private const val BLE_SEND_TO_SERVER = "CLIENT: Send"
-private const val BLE_RECEIVE_FROM_SERVER = "CLIENT: Receive"
-
-private const val BLE_STATUS = "Show status"
-private const val BLE_TERMINATE = "Terminate All"
 
 private const val LIST_SEPARATOR = "────"
 
@@ -53,30 +38,7 @@ class DebugMenuHandler(
 
         OVERRIDE_HINT_WITH_SECURITY_KEY to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['security-key'])") {} },
         OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['client-device'])") {} },
-        OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['emulator'])") {} },
         DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints([])") {} },
-
-        LIST_SEPARATOR * maxSeparatorsCount++ to {},
-
-        BLE_SET_MODE_MDOC to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothSetMode(\"MDoc\")") {} },
-        BLE_SET_MODE_READER to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothSetMode(\"MDocReader\")") {} },
-
-        LIST_SEPARATOR * maxSeparatorsCount++ to {},
-
-        BLE_CREATE_SERVER to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothCreateServer(\"00179c7a-eec6-4f88-8646-045fda9ac4d8\").then(r=>console.log(r))") {} },
-        BLE_SEND_TO_CLIENT to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothSendToClient([1,2,3,4,5,6]).then(r=>console.log(r))") {} },
-        BLE_RECEIVE_FROM_CLIENT to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothReceiveFromClient().then(r=>alert(r))") {} },
-
-        LIST_SEPARATOR * maxSeparatorsCount++ to {},
-
-        BLE_CREATE_CLIENT to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothCreateClient(\"00179c7a-eec6-4f88-8646-045fda9ac4d8\").then(r=>alert(r))") {} },
-        BLE_SEND_TO_SERVER to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothSendToServer([6,5,4,3,2,1]).then(r=>alert(r))") {} },
-        BLE_RECEIVE_FROM_SERVER to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothReceiveFromServer().then(r=>alert(r))") {} },
-
-        LIST_SEPARATOR * maxSeparatorsCount++ to {},
-
-        BLE_STATUS to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothStatus().then(r=>alert(r))") {} },
-        BLE_TERMINATE to { it("$JAVASCRIPT_BRIDGE_NAME.bluetoothTerminate().then(r=>alert(r))") {} },
 
         LIST_SEPARATOR * maxSeparatorsCount++ to {},
 
@@ -91,10 +53,6 @@ class DebugMenuHandler(
                 context.startActivity(Intent(Intent.ACTION_VIEW, uri))
             }
         },
-
-        SHOW_VERSION to { js ->
-            // nothing
-        }
     )
 
     fun onMenuOpened(jsExecutor: JSExecutor) {
