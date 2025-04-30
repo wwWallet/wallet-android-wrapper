@@ -60,7 +60,7 @@ class WalletJsBridge(
 
             selectedContainer ?: securityKeyCredentialsContainer
         } catch (jsonException: JSONException) {
-            Log.e(
+            Log.i(
                 tagForLog,
                 "'hints' field in credential options not found, defaulting back to 'security-key'.",
                 jsonException
