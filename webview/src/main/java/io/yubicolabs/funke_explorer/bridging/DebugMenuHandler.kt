@@ -3,20 +3,18 @@ package io.yubicolabs.funke_explorer.bridging
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import android.webkit.ValueCallback
 import androidx.core.net.toUri
 import io.yubicolabs.funke_explorer.BuildConfig
 import io.yubicolabs.funke_explorer.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 import io.yubicolabs.funke_explorer.json.toList
-import io.yubicolabs.funke_explorer.tagForLog
 import org.json.JSONArray
 import kotlin.math.log10
 import kotlin.math.nextUp
 
 private const val SHOW_URL_ROW = "Show URL Row"
 private const val HIDE_URL_ROW = "Hide URL Row"
-private const val SEND_FEEDBACK = "Send Issue"
+private const val SEND_FEEDBACK = "Give Feedback"
 private const val SHOW_VERSION = "Version ${BuildConfig.VERSION_NAME} @ ${BuildConfig.VERSION_CODE}"
 
 private const val OVERRIDE_HINT_WITH_SECURITY_KEY = "Set hints to ['security-key']"
@@ -84,7 +82,7 @@ class DebugMenuHandler(
 
         SEND_FEEDBACK to { js ->
             js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
-                val jsonArray = JSONArray(logsJson.replace(":,", ":\"\""))
+                val jsonArray = JSONArray(logsJson)
                 val logs = jsonArray.toList().map { "$it" }
                 val body = createGitHubIssueBody(logs)
                 val title = "Wwwwallet wrapper issue"
@@ -132,8 +130,23 @@ class DebugMenuHandler(
 private operator fun String.times(times: Int): String =
     (0 until times).joinToString(separator = "") { this }
 
-private fun createGitHubIssueBody(logs: List<String>): String {
+private fun createGitHubIssueBody(logs: List<String>, maxLogLineCount: Int = 50): String {
     val digits = log10(logs.size.toFloat()).nextUp().toInt() + 1
+
+    // truncate log to max lines (otherwise request to github becomes to big)
+    val truncatedLogs = if (logs.size > maxLogLineCount) {
+        logs.takeLast(maxLogLineCount)
+    } else {
+        logs
+    }
+
+    val truncated = truncatedLogs.size < logs.size
+    val truncatedOffset = if (truncated) {
+        logs.size - truncatedLogs.size
+    } else {
+        0
+    }
+
 
     return """Hey wwwallet team,
                            
@@ -151,9 +164,10 @@ private fun createGitHubIssueBody(logs: List<String>): String {
     <details><summary>Wwallet Log</summary>
 
     ```
+    ${if (truncated) "… truncated …" else ""}
     ${
-        logs.mapIndexed { index, line ->
-            "${"%0${digits}d".format(index + 1)}: $line"
+        truncatedLogs.mapIndexed { index, line ->
+            "${"%0${digits}d".format(index + truncatedOffset + 1)}: $line"
         }.joinToString("\n")
     }
     ```

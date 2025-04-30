@@ -19,7 +19,7 @@ if( typeof JAVASCRIPT_BRIDGE.__real_log__ === 'undefined' ) {
 
     console.log = (...args) => {
       JAVASCRIPT_BRIDGE.__real_log__(...args);
-      JAVASCRIPT_BRIDGE.__captured_logs__.push(...args);
+      JAVASCRIPT_BRIDGE.__captured_logs__.push(String(args));
     };
 }
 
