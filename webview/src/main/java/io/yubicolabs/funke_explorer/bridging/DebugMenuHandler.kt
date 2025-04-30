@@ -5,19 +5,24 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.webkit.ValueCallback
+import androidx.core.net.toUri
 import io.yubicolabs.funke_explorer.BuildConfig
 import io.yubicolabs.funke_explorer.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
+import io.yubicolabs.funke_explorer.json.toList
 import io.yubicolabs.funke_explorer.tagForLog
+import org.json.JSONArray
+import kotlin.math.log10
+import kotlin.math.nextUp
 
 private const val SHOW_URL_ROW = "Show URL Row"
 private const val HIDE_URL_ROW = "Hide URL Row"
-private const val SEND_FEEDBACK = "Send Feedback"
+private const val SEND_FEEDBACK = "Send Issue"
 private const val SHOW_VERSION = "Version ${BuildConfig.VERSION_NAME} @ ${BuildConfig.VERSION_CODE}"
 
-private const val OVERRIDE_HINT_WITH_SECURITY_KEY = "Override credential option hint with 'security-key'"
-private const val OVERRIDE_HINT_WITH_CLIENT_DEVICE = "Override credential option hint with 'client-device'"
-private const val OVERRIDE_HINT_WITH_EMULATOR = "Override credential option hint with 'emulator'"
-private const val DO_NOT_OVERRIDE_HINT = "Don't override credential option hints."
+private const val OVERRIDE_HINT_WITH_SECURITY_KEY = "Set hints to ['security-key']"
+private const val OVERRIDE_HINT_WITH_CLIENT_DEVICE = "Set hints to ['client-device']"
+private const val OVERRIDE_HINT_WITH_EMULATOR = "Set hints to ['emulator']"
+private const val DO_NOT_OVERRIDE_HINT = "Reset hints"
 
 private const val BLE_SET_MODE_MDOC = "mDoc Mode"
 private const val BLE_SET_MODE_READER = "mDoc Reader Mode (DEFAULT)"
@@ -48,10 +53,10 @@ class DebugMenuHandler(
 
         LIST_SEPARATOR * maxSeparatorsCount++ to {},
 
-        OVERRIDE_HINT_WITH_SECURITY_KEY to { it("$JAVASCRIPT_BRIDGE_NAME.__override_hints = ['security-key']"){} },
-        OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.__override_hints = ['client-device']"){} },
-        OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.__override_hints = ['emulator']"){} },
-        DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.__override_hints = []"){} },
+        OVERRIDE_HINT_WITH_SECURITY_KEY to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['security-key'])") {} },
+        OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['client-device'])") {} },
+        OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['emulator'])") {} },
+        DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints([])") {} },
 
         LIST_SEPARATOR * maxSeparatorsCount++ to {},
 

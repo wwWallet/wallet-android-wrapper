@@ -37,8 +37,8 @@ if (visualize) {
             link = document.createElement("a")
             link.setAttribute('id', 'android-injection-visualization')
             link.setAttribute('href', 'javascript:JAVASCRIPT_BRIDGE.openDebugMenu()')
-            link.setAttribute('style', 'position:absolute;top:-13px;right:0;padding:0.5em;z-index:9999999;rotate:180deg;')
-            link.innerHTML = '<img src="https://developer.android.com/static/images/logos/android_dt.svg" width="20" height="20"/>'
+            link.setAttribute('style', 'position:absolute;top:-0px;right:0;padding:0.5em;z-index:9999999;rotate:180deg;')
+            link.innerHTML = '🤖'
             body.appendChild(link)
         }
     } else {
@@ -48,6 +48,28 @@ if (visualize) {
 
 // override incoming hint
 JAVASCRIPT_BRIDGE.__override_hints = []
+JAVASCRIPT_BRIDGE.overrideHints = function(newHints) {
+    JAVASCRIPT_BRIDGE.__override_hints = newHints;
+
+    if (visualize) {
+        var viz = '👀'
+        if (newHints.length == 0) {
+            viz = '🤖'
+        } else if (newHints[0] == 'security-key'){
+            viz = '🗝️'
+        } else if (newHints[0] == 'client-device'){
+            viz = '📲'
+        } else if (newHints[0] == 'emulator'){
+            viz = '🥸'
+        } else {
+           viz = '¿¿'
+        }
+
+        document.getElementById('android-injection-visualization').innerHTML = viz
+    } else {
+        console.log('no viz, no update.')
+    }
+}
 
 // override functions on navigator
 function overrideNavigatorCredentialsWithBridgeCall(method) {
