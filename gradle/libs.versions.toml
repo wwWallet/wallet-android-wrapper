@@ -15,7 +15,7 @@ yubikit = "2.8.0"
 logback = "3.0.0"
 test-json = "20231013"
 coroutines = "1.10.1"
-androidxtest = "1.6.2"
+androidxtest = "1.6.1"
 softauth = "0.1.2"
 
 [libraries]
