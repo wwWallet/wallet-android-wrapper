@@ -1,6 +1,6 @@
 # 0.0.14
 
-* fix for PRF exention
+* fix for PRF extension
 * github action for building, testing and releasing
  * available: release, debug, yubikit apks.
 
