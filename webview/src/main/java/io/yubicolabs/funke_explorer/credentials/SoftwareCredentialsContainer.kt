@@ -141,7 +141,7 @@ private fun AuthenticatorAssertionResponse.toJson(): JSONObject = JSONObject(
 
 private fun ClientAssertionExtensionOutputs.toJson(): JSONObject = JSONObject(
     mapOf(
-        "appid" to appid,
+        "appid" to appid.getOrNull(),
         "largeBlob" to largeBlob.getOrNull()?.toJson()
     ).filter { entry -> entry.value != null }
 )
@@ -150,7 +150,7 @@ private fun Extensions.LargeBlob.LargeBlobAuthenticationOutput.toJson(): JSONObj
     JSONObject(
         mapOf(
             "blob" to blob.getOrNull()?.base64Url,
-            "written" to written,
+            "written" to written.getOrNull(),
         ).filter { entry -> entry.value != null }
     )
 
@@ -174,9 +174,9 @@ private fun PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistra
 
 private fun ClientRegistrationExtensionOutputs.toJson() = JSONObject(
     mapOf(
-        "appidExclude" to appidExclude.orElse(null),
-        "credProps" to credProps.orElse(null),
-        "largeBlob" to largeBlob.orElse(null),
+        "appidExclude" to appidExclude.getOrNull(),
+        "credProps" to credProps.getOrNull(),
+        "largeBlob" to largeBlob.getOrNull(),
     ).filter { entry -> entry.value != null }
 )
 
