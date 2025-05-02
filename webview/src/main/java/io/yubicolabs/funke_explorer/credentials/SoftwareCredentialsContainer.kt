@@ -2,6 +2,7 @@
 
 package io.yubicolabs.funke_explorer.credentials
 
+import android.util.Log
 import com.yubico.webauthn.data.AuthenticatorAssertionResponse
 import com.yubico.webauthn.data.AuthenticatorAttestationResponse
 import com.yubico.webauthn.data.AuthenticatorTransport
@@ -14,17 +15,18 @@ import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor
 import com.yubico.webauthn.data.PublicKeyCredentialRequestOptions
 import com.yubico.webauthn.data.UserVerificationRequirement
+import com.yubico.webauthn.data.ByteArray as YubiBytes
 import de.adesso.softauthn.Authenticators
 import de.adesso.softauthn.CredentialsContainer
 import de.adesso.softauthn.Origin
 import de.adesso.softauthn.authenticator.WebAuthnAuthenticator
 import io.yubicolabs.funke_explorer.BuildConfig
 import io.yubicolabs.funke_explorer.json.toList
+import io.yubicolabs.funke_explorer.tagForLog
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URL
 import java.util.SortedSet
-import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.jvm.optionals.getOrNull
 
@@ -39,6 +41,10 @@ internal class SoftwareCredentialsContainer : NavigatorCredentialsContainer {
         failureCallback: (Throwable) -> Unit
     ) = try {
         val publicKey = options.getJSONObject("publicKey")
+        if (publicKey.has("hints")) {
+            Log.i(tagForLog, "Currently hints are not supported in software. Ignoring them.")
+            publicKey.remove("hints")
+        }
         val softOptions = publicKey.toPKCCO()
         val credential = credentials.create(softOptions)
 
@@ -67,10 +73,10 @@ private fun JSONObject.toPKCCO(): PublicKeyCredentialCreationOptions =
     PublicKeyCredentialCreationOptions.fromJson(toString())
 
 private fun JSONObject.toPKCRO(): PublicKeyCredentialRequestOptions {
-    val challenge = getString("challenge").debase64()
+    val challenge = YubiBytes.fromBase64Url(getString("challenge"))
 
     val builder = PublicKeyCredentialRequestOptions.builder()
-        .challenge(com.yubico.webauthn.data.ByteArray(challenge))
+        .challenge(challenge)
         .rpId(getString("rpId"))
         .allowCredentials(getJSONArray("allowCredentials").toPublicKeyCredentialDescriptors())
 
@@ -90,17 +96,20 @@ private fun String.toUserVerificationRequirement(): UserVerificationRequirement 
 
 private fun JSONArray.toPublicKeyCredentialDescriptors(): List<PublicKeyCredentialDescriptor> =
     toList().mapNotNull {
-        if (it is JSONObject) {
-            val id = com.yubico.webauthn.data.ByteArray(it.getString("id").hexToByteArray())
-            PublicKeyCredentialDescriptor.builder()
-                .id(id)
-                .build()
+        if (it is Map<*, *>) {
+            val rawId = it["id"]
+            if (rawId is String) {
+                val id = YubiBytes.fromBase64Url(rawId)
+                PublicKeyCredentialDescriptor.builder()
+                    .id(id)
+                    .build()
+            } else {
+                null
+            }
         } else {
             null
         }
     }
-
-private fun String.debase64(): ByteArray = Base64.UrlSafe.decode(this)
 
 private fun PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionExtensionOutputs>?.toAssertionJson(): JSONObject =
     if (this == null) {
@@ -111,8 +120,8 @@ private fun PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionE
 
         JSONObject(
             mapOf(
-                "id" to id.hex,
-                "rawId" to id.base64,
+                "id" to id.base64Url,
+                "rawId" to id.base64Url,
                 "type" to type.name,
                 "clientExtensionResults" to extensionResultsJson,
                 "response" to responseJson,
@@ -122,10 +131,10 @@ private fun PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionE
 
 private fun AuthenticatorAssertionResponse.toJson(): JSONObject = JSONObject(
     mapOf(
-        "authenticatorData" to authenticatorData.base64,
-        "clientDataJSON" to clientDataJSON.base64,
-        "signature" to signature.base64,
-        "userHandle" to userHandle.getOrNull()?.base64,
+        "authenticatorData" to authenticatorData.base64Url,
+        "clientDataJSON" to clientDataJSON.base64Url,
+        "signature" to signature.base64Url,
+        "userHandle" to userHandle.getOrNull()?.base64Url,
         "clientData" to clientData.toJson(),
     ).filter { entry -> entry.value != null }
 )
@@ -140,11 +149,10 @@ private fun ClientAssertionExtensionOutputs.toJson(): JSONObject = JSONObject(
 private fun Extensions.LargeBlob.LargeBlobAuthenticationOutput.toJson(): JSONObject =
     JSONObject(
         mapOf(
-            "blob" to blob.getOrNull()?.base64,
+            "blob" to blob.getOrNull()?.base64Url,
             "written" to written,
         ).filter { entry -> entry.value != null }
     )
-
 
 private fun PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs>?.toAttestationJson(): JSONObject =
     if (this == null) {
@@ -155,8 +163,8 @@ private fun PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistra
 
         JSONObject(
             mapOf(
-                "id" to id.hex,
-                "rawId" to id.base64,
+                "id" to id.base64Url,
+                "rawId" to id.base64Url,
                 "type" to type.name,
                 "clientExtensionResults" to extensionResults,
                 "response" to response,
@@ -174,16 +182,16 @@ private fun ClientRegistrationExtensionOutputs.toJson() = JSONObject(
 
 private fun AuthenticatorAttestationResponse.toJson() = JSONObject(
     mapOf(
-        "attestationObject" to attestationObject.base64,
+        "attestationObject" to attestationObject.base64Url,
         "clientData" to clientData.toJson(),
-        "clientDataJSON" to clientDataJSON.base64,
+        "clientDataJSON" to clientDataJSON.base64Url,
         "transports" to transports.toJson(),
     ).filter { entry -> entry.value != null }
 )
 
 private fun CollectedClientData.toJson() = JSONObject(
     mapOf(
-        "challenge" to challenge.hex,
+        "challenge" to challenge.base64Url,
         "origin" to origin,
         "type" to type,
     ).filter { entry -> entry.value != null }

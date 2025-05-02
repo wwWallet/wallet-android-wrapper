@@ -160,7 +160,6 @@ class WalletJsBridge(
         Log.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.get($promiseUuid, $options) called.")
 
         val mappedOptions = JSONObject(options)
-        mappedOptions.setNested("publicKey.attestation", "none")
         credentialsContainerByOption(mappedOptions)
             .get(
                 options = mappedOptions,
