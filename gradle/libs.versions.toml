@@ -17,10 +17,12 @@ test-json = "20231013"
 coroutines = "1.10.1"
 androidxtest = "1.6.1"
 softauth = "0.1.2"
+accompanist = "0.27.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+android-accompanist = {group ="com.google.accompanist", name = "accompanist-systemuicontroller",version.ref = "accompanist"}
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
