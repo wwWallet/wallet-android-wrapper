@@ -2,30 +2,23 @@ package io.yubicolabs.funke_explorer
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.net.http.SslError
 import android.os.Bundle
 import android.util.Log
 import android.view.ViewGroup
-import android.webkit.JsResult
-import android.webkit.PermissionRequest
 import android.webkit.ServiceWorkerClient
 import android.webkit.ServiceWorkerController
-import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings.LOAD_NO_CACHE
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -37,10 +30,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,9 +50,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.webkit.WebViewClientCompat
 import ch.qos.logback.classic.android.BasicLogcatConfigurator
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import io.yubicolabs.funke_explorer.bluetooth.BleClientHandler
 import io.yubicolabs.funke_explorer.bluetooth.BleServerHandler
 import io.yubicolabs.funke_explorer.bridging.DebugMenuHandler
@@ -65,10 +60,9 @@ import io.yubicolabs.funke_explorer.bridging.WalletJsBridge.Companion.JAVASCRIPT
 import io.yubicolabs.funke_explorer.credentials.NavigatorCredentialsContainerAndroid
 import io.yubicolabs.funke_explorer.credentials.NavigatorCredentialsContainerYubico
 import io.yubicolabs.funke_explorer.credentials.SoftwareCredentialsContainer
-import io.yubicolabs.funke_explorer.ui.theme.FunkeExplorerTheme
+import io.yubicolabs.funke_explorer.webkit.WalletWebChromeClient
+import io.yubicolabs.funke_explorer.webkit.WalletWebViewClient
 import kotlinx.coroutines.Dispatchers
-import java.io.ByteArrayInputStream
-
 
 class MainActivity : ComponentActivity() {
     init {
@@ -77,26 +71,24 @@ class MainActivity : ComponentActivity() {
 
     val vm: MainViewModel by viewModels<MainViewModel>()
 
-    val permissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) {
-                permissionGranted?.invoke()
-            } else {
-                permissionDenied?.invoke()
-            }
+    private val webViewClient: WebViewClient = WalletWebViewClient(this)
 
-            permissionGranted = null
-            permissionDenied = null
-        }
+    private val webChromeClient: WebChromeClient = WalletWebChromeClient(this)
 
-    var permissionGranted: (() -> Unit)? = null
-    var permissionDenied: (() -> Unit)? = null
-
-    fun requestPermission(input: String, granted: () -> Unit, denied: () -> Unit) {
-        permissionGranted = granted
-        permissionDenied = denied
-
-        permissionLauncher.launch(input)
+    private val javascriptInterfaceCreator: (WebView) -> WalletJsBridge = { webView ->
+        WalletJsBridge(
+            webView,
+            Dispatchers.Main,
+            NavigatorCredentialsContainerYubico(activity = this),
+            NavigatorCredentialsContainerAndroid(activity = this),
+            SoftwareCredentialsContainer(),
+            BleClientHandler(activity = this),
+            BleServerHandler(activity = this),
+            DebugMenuHandler(
+                context = this,
+                showUrlRow = { vm.showUrlRow(it) }
+            )
+        )
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -126,7 +118,11 @@ class MainActivity : ComponentActivity() {
                                     Text(text = stringResource(id = R.string.app_name))
                                 },
                                 actions = {
-                                    IconButton(onClick = { vm.setUrl(BuildConfig.BASE_URL) }) {
+                                    IconButton(onClick = {
+                                        // force update
+                                        vm.setUrl("")
+                                        vm.setUrl(BuildConfig.BASE_URL)
+                                    }) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.baseline_refresh_24),
                                             contentDescription = null
@@ -148,11 +144,12 @@ class MainActivity : ComponentActivity() {
 
                         WebView(
                             activity = this@MainActivity,
-                            vm = vm,
-                            requestPermission = {
-                                val (input, granted, denied) = it
-                                this@MainActivity.requestPermission(input, granted, denied)
-                            }
+                            webViewClient = webViewClient,
+                            webChromeClient = webChromeClient,
+                            javascriptInterfaceCreator = javascriptInterfaceCreator,
+                            javascriptInterfaceName = JAVASCRIPT_BRIDGE_NAME,
+                            vm.url.collectAsState().value ?: "",
+                            vm::setUrl
                         )
                     }
                 }
@@ -201,44 +198,42 @@ fun ColumnScope.UrlRow(vm: MainViewModel) {
 @Composable
 fun ColumnScope.WebView(
     activity: Activity,
-    vm: MainViewModel,
-    requestPermission: (RequestPermissionParameters) -> Unit,
+    webViewClient: WebViewClient,
+    webChromeClient: WebChromeClient,
+    javascriptInterfaceCreator: (WebView) -> Any,
+    javascriptInterfaceName: String,
+    url: String,
+    setUrl: (String) -> Unit,
 ) {
-    val url by vm.url.collectAsState()
-
     AndroidView(
         modifier = Modifier.wrapContentHeight(
             align = Alignment.Top,
         ),
         factory = createWebViewFactory(
             activity = activity,
-            showUrlRow = { vm.showUrlRow(it) },
-            requestPermission = requestPermission
+            webViewClient = webViewClient,
+            webChromeClient = webChromeClient,
+            javascriptInterfaceCreator = javascriptInterfaceCreator,
+            javascriptInterfaceName = javascriptInterfaceName,
         ),
         update = { webView: WebView ->
             updateWebView(
                 webView = webView,
                 url = url,
-                newUrlCallback = { vm.setUrl(it) },
+                newUrlCallback = setUrl
             )
         }
     )
 }
 
-private const val WEBKIT_VIDEO_PERMISSION = "android.webkit.resource.VIDEO_CAPTURE"
-
-data class RequestPermissionParameters(
-    val resource: String,
-    val grant: () -> Unit,
-    val deny: () -> Unit
-)
-
 @Composable
-@SuppressLint("SetJavaScriptEnabled", "RequiresFeature")
+@SuppressLint("SetJavaScriptEnabled", "RequiresFeature", "JavascriptInterface")
 private fun createWebViewFactory(
     activity: Activity,
-    showUrlRow: (Boolean) -> Unit,
-    requestPermission: (RequestPermissionParameters) -> Unit,
+    webViewClient: WebViewClient,
+    webChromeClient: WebChromeClient,
+    javascriptInterfaceCreator: (WebView) -> Any,
+    javascriptInterfaceName: String,
 ) = { context: Context ->
     val webView = WebView(activity).apply {
         setNetworkAvailable(true)
@@ -253,157 +248,9 @@ private fun createWebViewFactory(
         loadWithOverviewMode = true
     }
 
-    webView.webViewClient = object : WebViewClientCompat() {
-        override fun shouldInterceptRequest(
-            view: WebView,
-            request: WebResourceRequest
-        ): WebResourceResponse? {
-            val response = super.shouldInterceptRequest(view, request)
-            val responseLog = if (response != null) {
-                val data = if (response.data != null) {
-                    " " + String(response.data.readBytes())
-                } else {
-                    ""
-                }
+    webView.webViewClient = webViewClient
 
-                "\n${response.statusCode}$data"
-            } else {
-                ""
-            }
-
-            Log.i(
-                tagForLog,
-                "${request.method.uppercase()}: ${request.url}$responseLog"
-            )
-
-            return when (request.url.scheme) {
-                "http", "https" -> response
-
-                else -> {
-                    val url = if (request.url.toString().startsWith("view://")) {
-                        Uri.parse(request.url.toString().replace("view://", "https://"))
-                    } else {
-                        request.url
-                    }
-
-                    try {
-                        activity.startActivity(Intent(Intent.ACTION_VIEW, url))
-                    } catch (e: ActivityNotFoundException) {
-                        Log.e(tagForLog, "Could not find activity for ${url}.", e)
-                    }
-
-                    return if (url.scheme == "openid4vp") {
-                        response
-                    } else {
-                        // assume external handling and immediately return to sender.
-                        WebResourceResponse(
-                            "text/html",
-                            "utf-8",
-                            ByteArrayInputStream(
-                                """
-                            <script language="JavaScript" type="text/javascript">
-                                setTimeout("window.history.back()", 1000);
-                            </script>
-                            """.trim().toByteArray()
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-        override fun onPageFinished(view: WebView, url: String) {
-            super.onPageFinished(view, url)
-
-            view.evaluateJavascript("$JAVASCRIPT_BRIDGE_NAME.inject()") {
-                // remove unwanted elements
-                for (unwanted in listOf(
-                    "menu-area", // pid issuer useless menu in wrapped mode
-                    "ReactModalPortal"
-                )) {
-                    view.evaluateJavascript(
-                        """
-                            while(document.getElementsByClassName('$unwanted').length > 0) {
-                                document.getElementsByClassName('$unwanted')[0].remove()
-                            }
-                        """.trimIndent()
-                    ) {
-                        Log.i(tagForLog, "Hardening: Deleted $unwanted class from html.")
-                    }
-                }
-
-                // remove links to foreign pages
-                for (unwanted in listOf(
-                    "github",
-                    "gunet",
-                )) {
-                    view.evaluateJavascript(
-                        """
-                        for (let elem of document.getElementsByTagName("a")) {
-                            if(elem.href.indexOf("$unwanted") > -1 && elem.href.indexOf("view://") == -1) {
-                                let old = elem.href
-                                elem.setAttribute('href', old.replace('https://','view://'))
-                                console.log("Hardening: Redirected from", old, "to", elem.href)
-                            }
-                        }
-                    """.trimIndent()
-                    ) {}
-                }
-            }
-        }
-
-        override fun onReceivedSslError(
-            view: WebView,
-            handler: SslErrorHandler,
-            error: SslError
-        ) {
-            view.evaluateJavascript("console.log('SSL Error: \"$error\"');") {}
-            handler.proceed()
-        }
-    }
-
-    webView.webChromeClient = object : WebChromeClient() {
-        override fun onJsAlert(
-            view: WebView?,
-            url: String?,
-            message: String?,
-            result: JsResult?
-        ): Boolean {
-            Log.e("WEBVIEW", message ?: "<>")
-
-            return super.onJsAlert(view, url, message, result)
-        }
-
-        override fun onPermissionRequest(request: PermissionRequest) {
-            for (resource in request.resources) {
-                if (resource == WEBKIT_VIDEO_PERMISSION) {
-                    grantPermission(context, request, resource)
-                } else {
-                    webView.evaluateJavascript("console.log('Permission request denied: $resource')") {}
-                }
-            }
-        }
-
-        private fun grantPermission(
-            context: Context,
-            request: PermissionRequest,
-            resource: String,
-        ) {
-            when (ContextCompat.checkSelfPermission(context, "android.permission.CAMERA")) {
-                PackageManager.PERMISSION_GRANTED -> request.grant(arrayOf(resource))
-                PackageManager.PERMISSION_DENIED -> requestPermission(
-                    RequestPermissionParameters(
-                        "android.permission.CAMERA",
-                        { request.grant(arrayOf(resource)) },
-                        { request.deny() })
-                )
-            }
-        }
-
-        override fun onPermissionRequestCanceled(request: PermissionRequest) {
-            super.onPermissionRequestCanceled(request)
-        }
-    }
+    webView.webChromeClient = webChromeClient
 
     ServiceWorkerController
         .getInstance().apply {
@@ -418,34 +265,14 @@ private fun createWebViewFactory(
         }
 
     webView.addJavascriptInterface(
-        WalletJsBridge(
-            webView,
-            Dispatchers.Main,
-            NavigatorCredentialsContainerYubico(
-                activity = activity
-            ),
-            NavigatorCredentialsContainerAndroid(
-                activity = activity
-            ),
-            SoftwareCredentialsContainer(),
-            BleClientHandler(
-                activity = activity,
-            ),
-            BleServerHandler(
-                activity = activity,
-            ),
-            DebugMenuHandler(
-                context = activity,
-                showUrlRow = showUrlRow
-            )
-        ),
-        JAVASCRIPT_BRIDGE_NAME
+        javascriptInterfaceCreator(webView),
+        javascriptInterfaceName
     )
 
     webView
 }
 
-fun updateWebView(
+private fun updateWebView(
     webView: WebView,
     url: String?,
     newUrlCallback: (String) -> Unit
