@@ -27,7 +27,7 @@ class WalletJsBridge(
     private val emulatedCredentialsContainer: NavigatorCredentialsContainer,
     private val bleClientHandler: BleClientHandler,
     private val bleServerHandler: BleServerHandler,
-    private val debugMenuHandler: DebugMenuHandler
+    private val debugMenuHandler: DebugMenuHandler?
 ) {
     companion object {
         const val JAVASCRIPT_BRIDGE_NAME = "nativeWrapper"
@@ -100,7 +100,7 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun openDebugMenu() {
         Dispatchers.Main.dispatch(EmptyCoroutineContext) {
-            debugMenuHandler.onMenuOpened { code, callback ->
+            debugMenuHandler?.onMenuOpened { code, callback ->
                 dispatcher.dispatch(EmptyCoroutineContext) {
                     webView.evaluateJavascript(
                         code,
