@@ -4,7 +4,6 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.webkit.ValueCallback
-import androidx.core.net.toUri
 import io.yubicolabs.funke_explorer.BuildConfig
 import io.yubicolabs.funke_explorer.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 import io.yubicolabs.funke_explorer.json.toList
@@ -46,12 +45,23 @@ class DebugMenuHandler(
             js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
                 val jsonArray = JSONArray(logsJson)
                 val logs = jsonArray.toList().map { "$it" }
-                val body = createGitHubIssueBody(logs)
+                val body = createIssueBody(logs, Int.MAX_VALUE)
                 val title = "Wwwwallet wrapper issue"
-                val uri =
-                    "https://github.com/wwWallet/wwwallet-android-wrapper/issues/new?title=${title}&body=${body.urlSafe()}".toUri()
-                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-            }
+
+//              TODO: Once Github is public, move over from email to github issue creation.
+//              val uri =
+//                  "https://github.com/wwWallet/wwwallet-android-wrapper/issues/new?title=${title}&body=${body.urlSafe()}".toUri()
+//              context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    setType("text/html")
+                    putExtra(Intent.EXTRA_EMAIL, arrayOf("mario.bodemann@yubico.com"))
+                    putExtra(Intent.EXTRA_SUBJECT, title)
+                    putExtra(Intent.EXTRA_HTML_TEXT, body)
+                    putExtra(Intent.EXTRA_TEXT, body) // fallback
+                }
+
+                context.startActivity(intent)            }
         },
     )
 
@@ -88,7 +98,7 @@ class DebugMenuHandler(
 private operator fun String.times(times: Int): String =
     (0 until times).joinToString(separator = "") { this }
 
-private fun createGitHubIssueBody(logs: List<String>, maxLogLineCount: Int = 50): String {
+private fun createIssueBody(logs: List<String>, maxLogLineCount: Int = 50): String {
     val digits = log10(logs.size.toFloat()).nextUp().toInt() + 1
 
     // truncate log to max lines (otherwise request to github becomes to big)
@@ -119,11 +129,13 @@ private fun createGitHubIssueBody(logs: List<String>, maxLogLineCount: Int = 50)
     
     Greetings,
 
+    ----------------------
+
+    PS: The following is the log of errors:
     <details><summary>Wwallet Log</summary>
 
     ```
-    ${if (truncated) "… truncated …" else ""}
-    ${
+    ${if (truncated) "… truncated …\n" else ""} ${
         truncatedLogs.mapIndexed { index, line ->
             "${"%0${digits}d".format(index + truncatedOffset + 1)}: $line"
         }.joinToString("\n")
