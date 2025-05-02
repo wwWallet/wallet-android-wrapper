@@ -84,10 +84,12 @@ class MainActivity : ComponentActivity() {
             SoftwareCredentialsContainer(),
             BleClientHandler(activity = this),
             BleServerHandler(activity = this),
-            DebugMenuHandler(
-                context = this,
-                showUrlRow = { vm.showUrlRow(it) }
-            )
+            if (BuildConfig.DEBUG) {
+                DebugMenuHandler(
+                    context = this,
+                    showUrlRow = { vm.showUrlRow(it) }
+                )
+            } else null
         )
     }
 
