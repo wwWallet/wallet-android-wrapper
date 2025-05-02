@@ -119,20 +119,25 @@ private fun createIssueBody(logs: List<String>, maxLogLineCount: Int = 50): Stri
 
     return """Hey wwwallet team,
                            
-    I found the following issue on version ${BuildConfig.VERSION_NAME}:
+    I found the following issue in version ${BuildConfig.VERSION_NAME} of the Android app:
     
     Description
+
     1. I opened the app
-    2. ....
+    2. …
     
     Expectation
-    1. ...
+
+    1. …
+    
+    Thanks for taking a look into it.
     
     Greetings,
 
     ----------------------
 
-    PS: The following is the log of errors:
+    PS: The following is the log of the app:
+
     <details><summary>Wwallet Log</summary>
 
     ```
@@ -142,7 +147,6 @@ private fun createIssueBody(logs: List<String>, maxLogLineCount: Int = 50): Stri
         }.joinToString("\n")
     }
     ```
-    </table>
     </details> 
 """.lines().joinToString("\n") { it.trim() }
 }
