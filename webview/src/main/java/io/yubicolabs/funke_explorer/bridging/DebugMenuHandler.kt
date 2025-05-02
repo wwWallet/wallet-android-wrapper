@@ -37,6 +37,7 @@ class DebugMenuHandler(
 
         OVERRIDE_HINT_WITH_SECURITY_KEY to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['security-key'])") {} },
         OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['client-device'])") {} },
+        OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['emulator'])") {} },
         DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints([])") {} },
 
         LIST_SEPARATOR * maxSeparatorsCount++ to {},
