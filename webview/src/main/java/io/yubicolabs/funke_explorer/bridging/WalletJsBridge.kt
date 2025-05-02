@@ -35,19 +35,21 @@ class WalletJsBridge(
 
     private fun credentialsContainerByOption(mappedOptions: JSONObject): NavigatorCredentialsContainer =
         try {
-            val hints: List<String> =
-                mappedOptions.getJSONObject("publicKey").getJSONArray("hints").toList()
-                    .mapNotNull { it as? String }
+            val publicKey = mappedOptions.getJSONObject("publicKey")
+            // throws JSONException if not present
+            val jsonHints = publicKey.getJSONArray("hints")
+            val hints = jsonHints.toList().mapNotNull { it as? String }
 
             var selectedContainer: NavigatorCredentialsContainer? = null
             for (hint in hints) {
                 selectedContainer = when (hint) {
                     "security-key" -> securityKeyCredentialsContainer
                     "client-device" -> clientDeviceCredentialsContainer
-                    "emulator" -> emulatedCredentialsContainer
                     "hybrid" -> null // explicitly not supported
+                    // not in spec: added for testing
+                    "emulator" -> emulatedCredentialsContainer
                     else -> {
-                        // error case unknown hint.
+                        // error case: unknown hint.
                         Log.e(tagForLog, "Hint '$hint' not supported. Ignoring.")
                         null
                     }
