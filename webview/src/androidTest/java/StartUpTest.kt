@@ -1,31 +1,25 @@
 package com.yubico.ykbrowser
 
-import android.util.Log
 import android.view.View
 import android.webkit.WebView
-import androidx.test.espresso.Espresso.onIdle
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.NoMatchingViewException
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withClassName
 import androidx.test.ext.junit.rules.ActivityScenarioRule
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import io.yubicolabs.funke_explorer.BuildConfig
 import io.yubicolabs.funke_explorer.MainActivity
 import io.yubicolabs.funke_explorer.bridging.JSCodeSnippet
 import io.yubicolabs.funke_explorer.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
-import io.yubicolabs.funke_explorer.credentials.NavigatorCredentialsContainer
 import org.hamcrest.CoreMatchers.containsString
-import org.json.JSONObject
-
-import org.junit.Test
-import org.junit.runner.RunWith
-
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
+import org.junit.Test
 import org.junit.rules.Timeout
+import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
