@@ -1,57 +1,15 @@
-import groovy.json.JsonSlurper
-import java.io.ByteArrayOutputStream
-import java.net.URI
+import build.env
+import build.getApkFingerprints
+import build.getLogs
+import build.getReleaseQuoteAndAuthor
+import build.getServerFingerprints
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
+    `kotlin-dsl` apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.jetbrains.kotlin.android) apply false
     alias(libs.plugins.compose.compiler) apply false
-}
-
-fun runCommand(command: String): String {
-    val output = ByteArrayOutputStream()
-
-    val result: ExecResult? = exec {
-        commandLine = listOf("sh", "-c", command)
-        standardOutput = output
-    }.assertNormalExitValue()
-
-    if (result?.exitValue == 0) {
-        return output.toString().lines().filter { it.isNotBlank() }.joinToString("\n")
-    }
-
-    throw IllegalStateException("Command '${command}' return exit value: ${result?.exitValue}.")
-}
-
-fun getLogs(): String {
-    val lastTag = runCommand("git tag --sort=taggerdate | tail -2 | head -1")
-    val start = if (lastTag.isBlank()) {
-        val first = runCommand("git rev-list HEAD | tail -1")
-        first
-    } else {
-        lastTag
-    }
-    val end = "HEAD"
-
-    return runCommand("git log $start..$end --format=\"%s\"")
-}
-
-fun getReleaseQuoteAndAuthor(): Pair<String, String> {
-    val body = JsonSlurper().parse(URI.create("https://zenquotes.io/api/random").toURL())
-    var quote = ""
-    var author = ""
-
-    val item = (body as? List<*>)?.first() as? Map<*, *>?
-    if (item?.contains("q") == true) {
-        quote = item["q"] as String? ?: "<parser error>"
-    }
-
-    if (item?.contains("a") == true) {
-        author = item["a"] as String? ?: "<parser error>"
-    }
-
-    return quote to author
 }
 
 tasks.register("createReleaseNotes") {
