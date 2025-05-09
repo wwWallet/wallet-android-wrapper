@@ -108,8 +108,9 @@ dependencies {
     implementation(libs.ausweis)
     implementation(libs.yubikit.android)
     implementation(libs.yubikit.fido)
-    implementation(libs.softauth)
     implementation(libs.logback)
+
+    debugImplementation(libs.softauth)
 
     testImplementation(libs.junit)
     testImplementation(libs.test.json)
