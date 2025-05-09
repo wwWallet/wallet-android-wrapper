@@ -103,7 +103,6 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.playservices)
-    implementation(libs.android.accompanist)
     implementation(libs.coroutines)
     implementation(libs.webkit)
     implementation(libs.ausweis)
