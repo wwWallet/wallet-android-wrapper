@@ -3,13 +3,6 @@ name: Android Build on Push
 permissions:
   contents: write
 
-env:
-  WWWALLET_ANDROID_KEY_ALIAS: ${{ secrets.WWWALLET_ANDROID_KEY_ALIAS }}
-  WWWALLET_ANDROID_KEY_PASSWORD: ${{ secrets.WWWALLET_ANDROID_KEY_PASSWORD }}
-  WWWALLET_ANDROID_STORE_PASSWORD: ${{ secrets.WWWALLET_ANDROID_STORE_PASSWORD }}
-  WWWALLET_ANDROID_STORE_B64: ${{ secrets.WWWALLET_ANDROID_STORE_B64 }}
-  WWWALLET_ANDROID_HOST: ${{ secrets.WWWALLET_ANDROID_HOST }}
-
 on:
   push:
     branches:
@@ -30,6 +23,12 @@ on:
 jobs:
   push:
     runs-on: ubuntu-latest
+    env:
+      WWWALLET_ANDROID_KEY_ALIAS: ${{ secrets.WWWALLET_ANDROID_KEY_ALIAS }}
+      WWWALLET_ANDROID_KEY_PASSWORD: ${{ secrets.WWWALLET_ANDROID_KEY_PASSWORD }}
+      WWWALLET_ANDROID_STORE_PASSWORD: ${{ secrets.WWWALLET_ANDROID_STORE_PASSWORD }}
+      WWWALLET_ANDROID_STORE_B64: ${{ secrets.WWWALLET_ANDROID_STORE_B64 }}
+      WWWALLET_ANDROID_HOST: ${{ secrets.WWWALLET_ANDROID_HOST }}
 
     steps:
       - name: Install Android SDK
