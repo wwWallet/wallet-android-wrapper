@@ -2,6 +2,8 @@ package io.yubicolabs.funke_explorer.credentials
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.Dialog
+import android.content.DialogInterface
 import android.security.keystore.UserNotAuthenticatedException
 import android.text.InputType
 import android.util.Base64.NO_PADDING
@@ -23,10 +25,14 @@ import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.core.util.Callback
 import com.yubico.yubikit.core.util.Result
 import com.yubico.yubikit.fido.client.BasicWebAuthnClient
+import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable
 import com.yubico.yubikit.fido.ctap.Ctap2Session
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
+import com.yubico.yubikit.fido.webauthn.SerializationType
 import io.yubicolabs.funke_explorer.credentials.Operation.CreateOperation
 import io.yubicolabs.funke_explorer.credentials.Operation.GetOperation
 import io.yubicolabs.funke_explorer.json.getOrNull
@@ -299,8 +305,7 @@ class NavigatorCredentialsContainerYubico(
             }
 
             // TODO: make into fancy bottom drawer
-            val theme = io.yubicolabs.funke_explorer.R.style.Theme_Funkeexplorer_Dialog
-            val dialog = AlertDialog.Builder(activity, theme)
+            val dialog = AlertDialog.Builder(activity)
                 .setTitle("Pin Required")
                 .setView(pinEdit)
                 .setPositiveButton(android.R.string.ok) { dialog, which ->
