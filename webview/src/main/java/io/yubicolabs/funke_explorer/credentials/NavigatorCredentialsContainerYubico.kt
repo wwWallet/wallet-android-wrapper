@@ -225,7 +225,7 @@ class NavigatorCredentialsContainerYubico(
             operation.success(JSONObject(result.toMap()))
 
         } catch (ctap: CtapException) {
-            Log.e(tagForLog, "protocol exception: ${ctap.ctapError.toHumanReadable()}.", ctap)
+            Log.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
             operation.failure(ctap)
         } finally {
             // TODO: Think about cleanup
@@ -285,7 +285,7 @@ class NavigatorCredentialsContainerYubico(
             Log.i(tagForLog, "Done, got $result.")
             operation.success(JSONObject(result.toMap()))
         } catch (ctap: CtapException) {
-            Log.e(tagForLog, "protocol exception: ${ctap.ctapError.toHumanReadable()}.", ctap)
+            Log.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
             operation.failure(ctap)
         } finally {
             // TODO: Think about cleanup
