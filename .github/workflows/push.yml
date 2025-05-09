@@ -41,7 +41,7 @@ jobs:
           java-version: '21'
 
       - name: Test
-        run: ./gradlew clean assemble check
+        run: ./gradlew clean assemble check checkFingerPrints
 
       - name: Run Connected Tests
         uses: reactivecircus/android-emulator-runner@v2

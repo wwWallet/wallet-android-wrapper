@@ -40,6 +40,9 @@ jobs:
       - name: Assemble all APKs
         run: ./gradlew createReleaseNotes assemble
 
+      - name: Check
+        run: ./gradlew check checkFingerPrints
+
       - name: Create GitHub release (with notes)
         id: create_release
         uses: comnoco/create-release-action@v2
