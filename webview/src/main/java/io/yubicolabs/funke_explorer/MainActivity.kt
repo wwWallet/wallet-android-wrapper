@@ -51,7 +51,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.viewinterop.AndroidView
 import ch.qos.logback.classic.android.BasicLogcatConfigurator
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import io.yubicolabs.funke_explorer.bluetooth.BleClientHandler
 import io.yubicolabs.funke_explorer.bluetooth.BleServerHandler
 import io.yubicolabs.funke_explorer.bridging.DebugMenuHandler
