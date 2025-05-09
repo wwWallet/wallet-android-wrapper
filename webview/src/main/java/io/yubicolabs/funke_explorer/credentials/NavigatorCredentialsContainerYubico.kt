@@ -227,6 +227,9 @@ class NavigatorCredentialsContainerYubico(
         } catch (ctap: CtapException) {
             Log.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
             operation.failure(ctap)
+        } catch (th: Throwable) {
+            Log.e(tagForLog, "Unexpected error: '${th.message}'.", th)
+            operation.failure(th)
         } finally {
             // TODO: Think about cleanup
             lastOperation = null
@@ -287,10 +290,75 @@ class NavigatorCredentialsContainerYubico(
         } catch (ctap: CtapException) {
             Log.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
             operation.failure(ctap)
+        } catch (multiple: MultipleAssertionsAvailable) {
+            Log.i(tagForLog, "Found several assertions. User selection needed.")
+            requestSelection(multiple, kitOptions, operation)
+        } catch (th: Throwable) {
+            Log.e(tagForLog, "Unexpected error: '${th.message}'.", th)
+            operation.failure(th)
         } finally {
             // TODO: Think about cleanup
             lastOperation = null
             session.close()
+        }
+    }
+
+    private fun requestSelection(
+        multiple: MultipleAssertionsAvailable,
+        kitOptions: PublicKeyCredentialRequestOptions,
+        operation: GetOperation,
+    ) {
+        askForCredentialSelection(
+            multiple,
+            success = { credential ->
+                kitOptions.allowCredentials.clear()
+                kitOptions.allowCredentials.add(
+                    PublicKeyCredentialDescriptor(
+                        "public-key",
+                        credential.rawId,
+                        null
+                    )
+                )
+
+                get(
+                    JSONObject(mapOf("publicKey" to kitOptions.toMap(SerializationType.JSON))),
+                    operation.success,
+                    operation.failure
+                )
+            },
+            failure = {
+                operation.failure(Throwable())
+            }
+        )
+    }
+
+    private fun askForCredentialSelection(
+        available: MultipleAssertionsAvailable,
+        success: (PublicKeyCredential) -> Unit,
+        failure: () -> Unit,
+    ) {
+        Dispatchers.Main.dispatch(EmptyCoroutineContext) {
+            val items = available.users.map { it.displayName }.toTypedArray()
+            val listener = object : DialogInterface.OnClickListener {
+                override fun onClick(dialog: DialogInterface?, which: Int) {
+                    val credential = available.select(which)
+                    Log.i(tagForLog, "credential selected: $credential")
+                    dialog?.dismiss()
+
+                    success(credential)
+                }
+            }
+
+            AlertDialog.Builder(activity)
+                .setTitle("Select one")
+                .setItems(items, listener)
+                .setNegativeButton(android.R.string.cancel) { dialog, which ->
+                    Log.i(tagForLog, "No user selected.")
+                    dialog.dismiss()
+
+                    failure()
+                }
+                .show()
         }
     }
 
