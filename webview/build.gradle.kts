@@ -1,3 +1,6 @@
+import build.env
+import build.fileFromEnv
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -23,17 +26,17 @@ android {
 
     signingConfigs {
         create("all") {
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-            storePassword = "android"
-            storeFile = project.rootProject.file("funke.keystore")
+            keyAlias = env("WWWALLET_ANDROID_KEY_ALIAS")
+            keyPassword = env("WWWALLET_ANDROID_KEY_PASSWORD")
+            storePassword = env("WWWALLET_ANDROID_STORE_PASSWORD")
+            storeFile = fileFromEnv(project, "WWWALLET_ANDROID_STORE_B64", "funke.keystore")
         }
     }
 
     buildTypes {
         all {
+            buildConfigField("String", "BASE_URL", "\"${env("WWWALLET_ANDROID_HOST")}\"")
             buildConfigField("Boolean", "SHOW_URL_ROW", "false")
-            buildConfigField("String", "BASE_URL", "\"https://demo.wwwallet.org\"")
             buildConfigField("Boolean", "VISUALIZE_INJECTION", "false")
 
             signingConfig = signingConfigs.getByName("all")
