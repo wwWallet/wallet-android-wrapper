@@ -2,6 +2,10 @@
 
 * stability improvements
 * add 'hints' to select from platform authenticator (android sdk) or security key authenticator (yubikit sdk).
+* align night / day mode with phone selection
+* add credential selection for multiples
+* cleanup
+ * use debug build for debug menu and issue reporting
 
 # 0.0.14
 
