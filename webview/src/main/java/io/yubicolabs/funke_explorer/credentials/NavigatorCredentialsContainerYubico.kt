@@ -404,6 +404,7 @@ class NavigatorCredentialsContainerYubico(
     }
 }
 
+@Suppress("DEPRECATION")
 private fun Byte.toHumanReadable(): String = when (this) {
     CtapException.ERR_SUCCESS -> "ERR_SUCCESS"
     CtapException.ERR_INVALID_COMMAND -> "ERR_INVALID_COMMAND"

@@ -34,7 +34,7 @@ class NavigatorCredentialsContainerAndroid(
                     request = options.toCreateRequestOption()
                 )
 
-                val rawResult = result.data.getString(REGISTRATION_RESPONSE_BUNDLE_KEY)
+                val rawResult = result.data.getString(REGISTRATION_RESPONSE_BUNDLE_KEY) ?: ""
 
                 successCallback(JSONObject(rawResult))
             } catch (th: Throwable) {
@@ -81,5 +81,3 @@ private fun JSONObject.toGetRequestOption(): GetCredentialRequest = GetCredentia
         )
     )
 )
-
-private fun Bundle.toMap() = this.keySet().associate { key -> key to get(key) }
