@@ -39,19 +39,19 @@ fun getLogs(): String {
 
 fun getReleaseQuoteAndAuthor(): Pair<String, String> {
     val body = JsonSlurper().parse(URI.create("https://zenquotes.io/api/random").toURL())
-    var quote: String? = null
-    var author: String? = null
+    var quote = ""
+    var author = ""
 
-    val item = (body as? List<*>)?.first() as? Map<String, String>?
+    val item = (body as? List<*>)?.first() as? Map<*, *>?
     if (item?.contains("q") == true) {
-        quote = item["q"]
+        quote = item["q"] as String? ?: "<parser error>"
     }
 
     if (item?.contains("a") == true) {
-        author = item["a"]
+        author = item["a"] as String? ?: "<parser error>"
     }
 
-    return (quote ?: "") to (author ?: "")
+    return quote to author
 }
 
 tasks.register("createReleaseNotes") {
