@@ -35,7 +35,6 @@ android {
             buildConfigField("Boolean", "SHOW_URL_ROW", "false")
             buildConfigField("String", "BASE_URL", "\"https://demo.wwwallet.org\"")
             buildConfigField("Boolean", "VISUALIZE_INJECTION", "false")
-            buildConfigField("Boolean", "SHOW_URL_ROW", "false")
 
             signingConfig = signingConfigs.getByName("all")
         }
