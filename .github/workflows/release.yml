@@ -38,7 +38,7 @@ jobs:
         run: ./gradlew clean check
 
       - name: Assemble all APKs
-        run: ./gradlew createReleaseNotes build 
+        run: ./gradlew createReleaseNotes assemble
 
       - name: Create GitHub release (with notes)
         id: create_release
