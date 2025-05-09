@@ -42,6 +42,22 @@ tasks.register("createReleaseNotes") {
     }
 }
 
+tasks.register("checkFingerprints") {
+    description = "Check wether apk sha256fingerprint is wellknown files on server."
+
+    val host = env("WWWALLET_ANDROID_HOST")
+    doLast {
+        val fingers = getServerFingerprints(host)
+        val apkFingered = getApkFingerprints()
+        for ((apk, finger) in apkFingered) {
+            if (finger in fingers) {
+                println("Signature $finger of $apk found on $host.")
+            } else {
+                throw GradleException("Could not find signature '$finger' of '$apk' on server '$host'. ")
+            }
+        }
+    }
+}
 
 group = "yubico.labs"
 version = findProperty("wallet.versionName")!!
