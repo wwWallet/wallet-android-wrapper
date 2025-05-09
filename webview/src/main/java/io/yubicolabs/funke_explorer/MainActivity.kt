@@ -107,9 +107,6 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(
                 if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
             ) {
-                val systemUiController = rememberSystemUiController()
-                systemUiController.setSystemBarsColor(MaterialTheme.colorScheme.onPrimary)
-
                 val urlRow by vm.showUrlRow.collectAsState()
 
                 Scaffold(
