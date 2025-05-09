@@ -23,22 +23,12 @@ class WalletWebViewClient (
         request: WebResourceRequest
     ): WebResourceResponse? {
         val response = super.shouldInterceptRequest(view, request)
-        val responseLog = if (response != null) {
-            val data = if (response.data != null) {
-                " " + String(response.data.readBytes())
-            } else {
-                ""
-            }
+        val requestHeader = request.requestHeaders.map { e ->
+            "> ${e.key}: ${e.value}"
+        }.joinToString(separator = "\n")
 
-            "\n${response.statusCode}$data"
-        } else {
-            ""
-        }
-
-        Log.i(
-            tagForLog,
-            "${request.method.uppercase()}: ${request.url}$responseLog"
-        )
+        val debugRequest = "${request.method.uppercase()} ${request.url}\n$requestHeader"
+        Log.i(tagForLog, "intercepting http request: $debugRequest")
 
         return when (request.url.scheme) {
             "http", "https" -> response
