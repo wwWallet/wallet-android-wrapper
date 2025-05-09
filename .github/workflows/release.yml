@@ -31,6 +31,12 @@ jobs:
       WWWALLET_ANDROID_HOST: ${{ secrets.WWWALLET_ANDROID_HOST }}
 
     steps:
+      - name: Update ubuntu
+        run: sudo apt-get update
+
+      - name: Install Android SDK
+        run: sudo apt-get install -y android-sdk
+
       - name: Checkout code
         uses: actions/checkout@v4
 
