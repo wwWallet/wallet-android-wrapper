@@ -1,8 +1,8 @@
 import build.env
-import build.getApkFingerprints
+import build.getApkTargets
 import build.getLogs
 import build.getReleaseQuoteAndAuthor
-import build.getServerFingerprints
+import build.getServerTargets
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
@@ -43,18 +43,41 @@ tasks.register("createReleaseNotes") {
 }
 
 tasks.register("checkFingerprints") {
-    description = "Check wether apk sha256fingerprint is wellknown files on server."
+    description = "Check apk's sha256fingerprint is ./well-known files on given host."
 
     val host = env("WWWALLET_ANDROID_HOST")
     doLast {
-        val fingers = getServerFingerprints(host)
-        val apkFingered = getApkFingerprints()
-        for ((apk, finger) in apkFingered) {
-            if (finger in fingers) {
-                println("Signature $finger of $apk found on $host.")
-            } else {
-                throw GradleException("Could not find signature '$finger' of '$apk' on server '$host'. ")
+        val serverTargets = getServerTargets(host)
+        val apkTargets = getApkTargets()
+
+        val foundMatch = apkTargets.firstNotNullOfOrNull { apkTarget ->
+            serverTargets.firstNotNullOfOrNull { serverTarget ->
+                if (apkTarget.packageName == serverTarget.packageName) {
+                    val serverShaFound = serverTarget.shas.firstOrNull { serverSha ->
+                        apkTarget.shas.contains(serverSha)
+                    }
+
+                    if (serverShaFound != null) {
+                        serverTarget
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
             }
+        }
+
+        if (foundMatch != null) {
+            println("✅ Found signatures for all apks(${apkTargets.joinToString(", ") { it.name.split('/').last() }}) with package '${foundMatch.packageName}' on server '$host'.")
+        } else {
+            throw GradleException(
+                "🙅Could not find any matching signarure from host '$host' for\n${
+                    apkTargets.joinToString(separator = "\n") {
+                        "  ${it.name} with package ${it.packageName} and sha ${it.shas.joinToString()}"
+                    }
+                }"
+            )
         }
     }
 }
