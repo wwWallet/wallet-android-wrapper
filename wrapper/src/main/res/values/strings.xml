@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Wwwallet</string>
+    <string name="asset_statements" translatable="false">
+        [{
+  \"include\": \"https://demo.wwwallet.org/.well-known/assetlinks.json\"
+}]
+    </string>
+</resources>

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-
-    <style name="Theme.Funkeexplorer" parent="android:Theme.DeviceDefault.Light.NoActionBar" />
-
-    <style name="Theme.Funkeexplorer.Dialog" parent="android:Theme.DeviceDefault.Light.Dialog.Alert" />
-</resources>

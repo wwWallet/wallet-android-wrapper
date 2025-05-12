@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Wwwallet" parent="android:Theme.DeviceDefault.Light.NoActionBar" />
+
+    <style name="Theme.Wwwallet.Dialog" parent="android:Theme.DeviceDefault.Light.Dialog.Alert" />
+</resources>
