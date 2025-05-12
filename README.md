@@ -1,9 +1,9 @@
 [![Android Build and Publish](https://github.com/wwWallet/wwwallet-android-wrapper/actions/workflows/release.yml/badge.svg)](https://github.com/wwWallet/wwwallet-android-wrapper/actions/workflows/release.yml)
 
-FUNKE EXPLORER ANDROID
-======================
+Wwwallet Android
+================
 
-An Android native application wrapping `https://funke.wwwallet.org`. It is intended as a research project for the
+An Android native application wrapping `https://demo.wwwallet.org`. It is intended as a research project for the
 funke and sprintd competition.
 
 
@@ -29,7 +29,7 @@ The above commands will build and install the Android application (apk) on all c
 Wrapping
 --------
 
-This Android application "wraps" the https://funke.wwwallet.org/ website, providing direct interaction with Yubikeys and
+This Android application "wraps" the https://demo.wwwallet.org/ website, providing direct interaction with Yubikeys and
 an initial set of bluetooth communication with a verifier. The wrapping happens by loading the website inside an Android
 native `WebView` and intercepting interesting js code calls and websides to be loaded.
 
@@ -151,9 +151,9 @@ this app, the iOS wallet proposal and our custom build of Firefox.
 ### Yubico's SDK
 
 The Yubico SDK for Android [yubkit-android]((https://github.com/Yubico/yubikit-android) is used heavily for
-communicating, signing and verifying strong security when presenting documents or registering and signing into the funke
+communicating, signing and verifying strong security when presenting documents or registering and signing into the
 wwwwallet frontend.
-See [NavigatorCredentialsContainerYubico](src/main/java/io/yubicolabs/funke_explorer/credentials/NavigatorCredentialsContainerYubico.kt),
+See [NavigatorCredentialsContainerYubico](src/main/java/io/yubicolabs/wwwwallet/credentials/NavigatorCredentialsContainerYubico.kt),
 how the sdk is integrated.
 
 Alternatives for using Yubico's SDK was to either use the Android Platform FIDO2/ Webauthn implementation, but sadly

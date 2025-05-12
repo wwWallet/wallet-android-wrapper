@@ -71,7 +71,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./webview/build/outputs/apk/release/webview-release.apk
+          asset_path: ./wrapper/build/outputs/apk/release/wrapper-release.apk
           asset_name: wwwallet-${{ github.ref_name }}.apk
           asset_content_type: application/vnd.android.package-archive
 
@@ -81,6 +81,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./webview/build/outputs/apk/debug/webview-debug.apk
+          asset_path: ./wrapper/build/outputs/apk/debug/wrapper-debug.apk
           asset_name: wwwallet-debug-${{ github.ref_name }}.apk
           asset_content_type: application/vnd.android.package-archive

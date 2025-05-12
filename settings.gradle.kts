@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "funke-explorer"
-include(":webview")
+rootProject.name = "wwwallet-android-wrapper"
+include(":wrapper")
