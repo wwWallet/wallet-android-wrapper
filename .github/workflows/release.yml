@@ -47,13 +47,13 @@ jobs:
           java-version: '21'
 
       - name: Test
-        run: ./gradlew clean check
+        run: ./gradlew clean assemble check
 
       - name: Assemble all APKs
-        run: ./gradlew createReleaseNotes assemble
+        run: ./gradlew createReleaseNotes
 
-      - name: Check
-        run: ./gradlew check checkFingerPrints
+      - name: Fingerprints
+        run: ./gradlew checkFingerPrints
 
       - name: Create GitHub release (with notes)
         id: create_release
