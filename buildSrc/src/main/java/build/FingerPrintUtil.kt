@@ -5,23 +5,36 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import java.net.URI
 
-fun Project.getServerFingerprints(host: String): List<String> {
+data class Target(
+    val name: String,
+    val shas: List<String>,
+    val packageName: String
+)
+
+fun Project.getServerTargets(host: String): List<Target> {
     val body = JsonSlurper().parse(URI.create("$host/.well-known/assetlinks.json").toURL())
-    val item = (body as? List<*>)?.first() as? Map<*, *>?
-    if (item != null) {
-        val target = item["target"] as? Map<*, *>?
-        val fingerprints = target?.get("sha256_cert_fingerprints") as? List<*>
-        if (fingerprints != null) {
-            return fingerprints.mapNotNull {
+    val items = (body as? List<*>) ?: emptyList<Any?>()
+    return items.mapNotNull { item ->
+        if (item as? Map<*, *> != null) {
+            val target = item["target"] as? Map<*, *>?
+            val shas = (target?.get("sha256_cert_fingerprints") as? List<*>)?.mapNotNull {
                 (it as? String)?.replace(":", "")
             }
+
+            val packageName = target?.getOrDefault("package_name", null) as? String
+
+            if (shas == null || packageName == null) {
+                null
+            } else {
+                Target(host, shas, packageName)
+            }
+        } else {
+            null
         }
     }
-
-    return emptyList()
 }
 
-fun Project.getApkFingerprints(): Map<String, String> {
+fun Project.getApkTargets(): List<Target> {
     val apksignerFound = runCommand("command apksigner")
     if (apksignerFound.contains("command not found")) {
         throw GradleException("Couldn't find 'apksigner'.")
@@ -32,16 +45,46 @@ fun Project.getApkFingerprints(): Map<String, String> {
         throw GradleException("No apks found, please 'assemble' first.")
     }
 
-    return apks.associate { apk ->
-        apk to (runCommand("apksigner verify --print-certs $apk").lines().mapNotNull {
-            if (it.contains("SHA-256")) {
-                it.split(":")
-                    .last()
-                    .trim()
-                    .uppercase()
-            } else {
-                null
+    return apks.map { apk ->
+        val fingers = runCommand("apksigner verify --print-certs $apk")
+            .lines()
+            .mapNotNull {
+                if (it.contains("SHA-256")) {
+                    it.split(":")
+                        .last()
+                        .trim()
+                        .uppercase()
+                } else {
+                    null
+                }
             }
-        }.joinToString(","))
+
+        val packageName = runCommand("aapt dump badging $apk")
+            .lines()
+            .firstNotNullOfOrNull { line ->
+                if ("package: " in line) {
+                    line
+                        .split(" ")
+                        .firstNotNullOfOrNull { kv ->
+                            if ("=" in kv) {
+                                val (key, value) = kv.split("=")
+                                if (key == "name") {
+                                    value.replace("'", "")
+                                } else {
+                                    null
+                                }
+                            } else {
+                                null
+                            }
+                        }
+                } else {
+                    null
+                }
+            }
+        Target(
+            apk,
+            fingers,
+            packageName ?: ""
+        )
     }
 }
