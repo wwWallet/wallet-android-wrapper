@@ -58,11 +58,13 @@ jobs:
       - name: Code Style
         run: ./gradlew ktlintCheck
 
+      - name: Generate code style fixes
+        if: failure()
+        run: ./gradlew ktlintFormat
+
       - name: Suggest code style fixes
         if: failure()
-        run: |
-          ./gradlew ktlintFormat
-          git diff
+        run: git diff
 
       - name: Test
         run: ./gradlew assemble check
