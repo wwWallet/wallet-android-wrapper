@@ -55,8 +55,17 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Code Style
+        run: ./gradlew ktlintCheck
+
+      - name: Suggest code style fixes
+        if: failure()
+        run: |
+          ./gradlew ktlintFormat
+          git diff
+
       - name: Test
-        run: ./gradlew clean assemble check
+        run: ./gradlew assemble check
 
       - name: Fingerprints
         run: ./gradlew checkFingerPrints
