@@ -86,9 +86,11 @@ class MainActivity : ComponentActivity() {
             if (BuildConfig.DEBUG) {
                 DebugMenuHandler(
                     context = this,
-                    showUrlRow = { vm.showUrlRow(it) }
+                    showUrlRow = { vm.showUrlRow(it) },
                 )
-            } else null
+            } else {
+                null
+            },
         )
     }
 
@@ -97,14 +99,14 @@ class MainActivity : ComponentActivity() {
         vm.activity = this // 👀 (NFC)
 
         onBackPressedDispatcher.addCallback(
-            owner = this
+            owner = this,
         ) { vm.onBackPressed() }
 
         super.onCreate(savedInstanceState)
 
         setContent {
             MaterialTheme(
-                if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+                if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
             ) {
                 val urlRow by vm.showUrlRow.collectAsState()
 
@@ -123,18 +125,19 @@ class MainActivity : ComponentActivity() {
                                     }) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.baseline_refresh_24),
-                                            contentDescription = null
+                                            contentDescription = null,
                                         )
                                     }
-                                }
+                                },
                             )
                         }
                     },
                 ) { paddingValues ->
                     Column(
-                        modifier = Modifier
-                            .padding(paddingValues)
-                            .fillMaxHeight()
+                        modifier =
+                            Modifier
+                                .padding(paddingValues)
+                                .fillMaxHeight(),
                     ) {
                         if (urlRow) {
                             UrlRow(vm)
@@ -147,7 +150,7 @@ class MainActivity : ComponentActivity() {
                             javascriptInterfaceCreator = javascriptInterfaceCreator,
                             javascriptInterfaceName = JAVASCRIPT_BRIDGE_NAME,
                             vm.url.collectAsState().value ?: "",
-                            vm::setUrl
+                            vm::setUrl,
                         )
                     }
                 }
@@ -175,19 +178,21 @@ fun ColumnScope.UrlRow(vm: MainViewModel) {
             onValueChange = {
                 tempUrl = it
             },
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Go,
-            ),
-            keyboardActions = KeyboardActions {
-                vm.setUrl(tempUrl)
-                keyboardController?.hide()
-            },
+            keyboardOptions =
+                KeyboardOptions(
+                    imeAction = ImeAction.Go,
+                ),
+            keyboardActions =
+                KeyboardActions {
+                    vm.setUrl(tempUrl)
+                    keyboardController?.hide()
+                },
         )
 
         IconButton(onClick = { vm.setUrl(tempUrl) }) {
             Icon(
                 painter = painterResource(id = android.R.drawable.ic_menu_upload),
-                contentDescription = null
+                contentDescription = null,
             )
         }
     }
@@ -204,23 +209,25 @@ fun ColumnScope.WebView(
     setUrl: (String) -> Unit,
 ) {
     AndroidView(
-        modifier = Modifier.wrapContentHeight(
-            align = Alignment.Top,
-        ),
-        factory = createWebViewFactory(
-            activity = activity,
-            webViewClient = webViewClient,
-            webChromeClient = webChromeClient,
-            javascriptInterfaceCreator = javascriptInterfaceCreator,
-            javascriptInterfaceName = javascriptInterfaceName,
-        ),
+        modifier =
+            Modifier.wrapContentHeight(
+                align = Alignment.Top,
+            ),
+        factory =
+            createWebViewFactory(
+                activity = activity,
+                webViewClient = webViewClient,
+                webChromeClient = webChromeClient,
+                javascriptInterfaceCreator = javascriptInterfaceCreator,
+                javascriptInterfaceName = javascriptInterfaceName,
+            ),
         update = { webView: WebView ->
             updateWebView(
                 webView = webView,
                 url = url,
-                newUrlCallback = setUrl
+                newUrlCallback = setUrl,
             )
-        }
+        },
     )
 }
 
@@ -233,9 +240,10 @@ private fun createWebViewFactory(
     javascriptInterfaceCreator: (WebView) -> Any,
     javascriptInterfaceName: String,
 ) = { context: Context ->
-    val webView = WebView(activity).apply {
-        setNetworkAvailable(true)
-    }
+    val webView =
+        WebView(activity).apply {
+            setNetworkAvailable(true)
+        }
 
     webView.settings.apply {
         javaScriptEnabled = true
@@ -258,13 +266,13 @@ private fun createWebViewFactory(
                     override fun shouldInterceptRequest(request: WebResourceRequest?): WebResourceResponse? {
                         return super.shouldInterceptRequest(request)
                     }
-                }
+                },
             )
         }
 
     webView.addJavascriptInterface(
         javascriptInterfaceCreator(webView),
-        javascriptInterfaceName
+        javascriptInterfaceName,
     )
 
     webView
@@ -273,7 +281,7 @@ private fun createWebViewFactory(
 private fun updateWebView(
     webView: WebView,
     url: String?,
-    newUrlCallback: (String) -> Unit
+    newUrlCallback: (String) -> Unit,
 ) {
     if (url?.isNotBlank() == true) {
         if (url == "webview://back") {
@@ -281,13 +289,14 @@ private fun updateWebView(
                 """
                 window.history.back()
                 document.location.href
-            """.trimIndent()
+                """.trimIndent(),
             ) {
-                val newUrl = if (it.contains("\"")) {
-                    it.split("\"")[1]
-                } else {
-                    it
-                }
+                val newUrl =
+                    if (it.contains("\"")) {
+                        it.split("\"")[1]
+                    } else {
+                        it
+                    }
 
                 Log.i(webView.tagForLog, "Reached $newUrl after back.")
                 newUrlCallback("")
@@ -295,9 +304,10 @@ private fun updateWebView(
         } else {
             webView.loadUrl(url)
         }
-        webView.layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+        webView.layoutParams =
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
     }
 }

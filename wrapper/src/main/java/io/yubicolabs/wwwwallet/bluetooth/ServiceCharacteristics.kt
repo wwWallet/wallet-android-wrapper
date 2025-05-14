@@ -4,11 +4,9 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import java.util.UUID
 
-
 sealed class ServiceCharacteristic(
     val name: String,
     val uuid: UUID,
-
     val broadcastProperty: Boolean = false,
     val readProperty: Boolean = false,
     val writeNoResponseProperty: Boolean = false,
@@ -16,7 +14,6 @@ sealed class ServiceCharacteristic(
     val notifyProperty: Boolean = false,
     val indicateProperty: Boolean = false,
     val signedWriteProperty: Boolean = false,
-
     val readPermission: Boolean = false,
     val readEncryptedPermission: Boolean = false,
     val readEncryptedMitmPermission: Boolean = false,
@@ -35,54 +32,62 @@ sealed class ServiceCharacteristic(
 
         private fun all(): List<ServiceCharacteristic> =
             when (mode) {
-                Mode.MDoc -> listOf(
-                    MDoc.State,
-                    MDoc.ServerToClient,
-                    MDoc.ClientToServer
-                )
+                Mode.MDoc ->
+                    listOf(
+                        MDoc.State,
+                        MDoc.ServerToClient,
+                        MDoc.ClientToServer,
+                    )
 
-                Mode.MDocReader -> listOf(
-                    MDocReader.State,
-                    MDocReader.ServerToClient,
-                    MDocReader.ClientToServer
-                )
+                Mode.MDocReader ->
+                    listOf(
+                        MDocReader.State,
+                        MDocReader.ServerToClient,
+                        MDocReader.ClientToServer,
+                    )
             }
 
         val ClientToServer: ServiceCharacteristic
-            get() = when (mode) {
-                Mode.MDoc -> MDoc.ClientToServer
-                Mode.MDocReader -> MDocReader.ClientToServer
-            }
+            get() =
+                when (mode) {
+                    Mode.MDoc -> MDoc.ClientToServer
+                    Mode.MDocReader -> MDocReader.ClientToServer
+                }
 
         val ServerToClient: ServiceCharacteristic
-            get() = when (mode) {
-                Mode.MDoc -> MDoc.ServerToClient
-                Mode.MDocReader -> MDocReader.ServerToClient
-            }
+            get() =
+                when (mode) {
+                    Mode.MDoc -> MDoc.ServerToClient
+                    Mode.MDocReader -> MDocReader.ServerToClient
+                }
 
         val State: ServiceCharacteristic
-            get() = when (mode) {
-                Mode.MDoc -> MDoc.State
-                Mode.MDocReader -> MDocReader.State
-            }
+            get() =
+                when (mode) {
+                    Mode.MDoc -> MDoc.State
+                    Mode.MDocReader -> MDocReader.State
+                }
 
-        fun toBleCharacteristics(): List<BluetoothGattCharacteristic> = all().map { characteristic ->
-            val bleCharacteristic = BluetoothGattCharacteristic(
-                characteristic.uuid,
-                characteristic.bleProperties,
-                characteristic.blePermissions,
-            )
-            if (characteristic.isASpecialSnowflake) {
-                val descriptor = BluetoothGattDescriptor(
-                    CharacteristicConfigurationDescriptorUUID,
-                    BluetoothGattDescriptor.PERMISSION_WRITE
-                )
-                descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE)
-                bleCharacteristic.addDescriptor(descriptor)
-            }
+        fun toBleCharacteristics(): List<BluetoothGattCharacteristic> =
+            all().map { characteristic ->
+                val bleCharacteristic =
+                    BluetoothGattCharacteristic(
+                        characteristic.uuid,
+                        characteristic.bleProperties,
+                        characteristic.blePermissions,
+                    )
+                if (characteristic.isASpecialSnowflake) {
+                    val descriptor =
+                        BluetoothGattDescriptor(
+                            CharacteristicConfigurationDescriptorUUID,
+                            BluetoothGattDescriptor.PERMISSION_WRITE,
+                        )
+                    descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE)
+                    bleCharacteristic.addDescriptor(descriptor)
+                }
 
-            bleCharacteristic
-        }
+                bleCharacteristic
+            }
     }
 
     private data object MDoc {
@@ -143,12 +148,13 @@ sealed class ServiceCharacteristic(
 
     enum class Mode {
         MDocReader,
-        MDoc
+        MDoc,
     }
 }
 
 val ServiceCharacteristic.bleProperties: Int
-    get() = (if (broadcastProperty) BluetoothGattCharacteristic.PROPERTY_BROADCAST else 0) or
+    get() =
+        (if (broadcastProperty) BluetoothGattCharacteristic.PROPERTY_BROADCAST else 0) or
             (if (readProperty) BluetoothGattCharacteristic.PROPERTY_READ else 0) or
             (if (writeNoResponseProperty) BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE else 0) or
             (if (writeProperty) BluetoothGattCharacteristic.PROPERTY_WRITE else 0) or
@@ -157,7 +163,8 @@ val ServiceCharacteristic.bleProperties: Int
             (if (signedWriteProperty) BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE else 0)
 
 val ServiceCharacteristic.blePermissions: Int
-    get() = (if (readPermission) BluetoothGattCharacteristic.PERMISSION_READ else 0) or
+    get() =
+        (if (readPermission) BluetoothGattCharacteristic.PERMISSION_READ else 0) or
             (if (readEncryptedPermission) BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED else 0) or
             (if (readEncryptedMitmPermission) BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED_MITM else 0) or
             (if (writePermission) BluetoothGattCharacteristic.PERMISSION_WRITE else 0) or

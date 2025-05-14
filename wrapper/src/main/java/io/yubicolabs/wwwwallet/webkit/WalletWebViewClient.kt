@@ -15,17 +15,18 @@ import io.yubicolabs.wwwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRID
 import io.yubicolabs.wwwwallet.tagForLog
 import java.io.ByteArrayInputStream
 
-class WalletWebViewClient (
-    private val activity: Activity
-): WebViewClientCompat() {
+class WalletWebViewClient(
+    private val activity: Activity,
+) : WebViewClientCompat() {
     override fun shouldInterceptRequest(
         view: WebView,
-        request: WebResourceRequest
+        request: WebResourceRequest,
     ): WebResourceResponse? {
         val response = super.shouldInterceptRequest(view, request)
-        val requestHeader = request.requestHeaders.map { e ->
-            "> ${e.key}: ${e.value}"
-        }.joinToString(separator = "\n")
+        val requestHeader =
+            request.requestHeaders.map { e ->
+                "> ${e.key}: ${e.value}"
+            }.joinToString(separator = "\n")
 
         val debugRequest = "${request.method.uppercase()} ${request.url}\n$requestHeader"
         Log.i(tagForLog, "intercepting http request: $debugRequest")
@@ -34,16 +35,17 @@ class WalletWebViewClient (
             "http", "https" -> response
 
             else -> {
-                val url = if (request.url.toString().startsWith("view://")) {
-                    Uri.parse(request.url.toString().replace("view://", "https://"))
-                } else {
-                    request.url
-                }
+                val url =
+                    if (request.url.toString().startsWith("view://")) {
+                        Uri.parse(request.url.toString().replace("view://", "https://"))
+                    } else {
+                        request.url
+                    }
 
                 try {
                     activity.startActivity(Intent(Intent.ACTION_VIEW, url))
                 } catch (e: ActivityNotFoundException) {
-                    Log.e(tagForLog, "Could not find activity for ${url}.", e)
+                    Log.e(tagForLog, "Could not find activity for $url.", e)
                 }
 
                 return if (url.scheme == "openid4vp") {
@@ -58,29 +60,32 @@ class WalletWebViewClient (
                             <script language="JavaScript" type="text/javascript">
                                 setTimeout("window.history.back()", 1000);
                             </script>
-                            """.trim().toByteArray()
-                        )
+                            """.trim().toByteArray(),
+                        ),
                     )
                 }
             }
         }
     }
 
-    override fun onPageFinished(view: WebView, url: String) {
+    override fun onPageFinished(
+        view: WebView,
+        url: String,
+    ) {
         super.onPageFinished(view, url)
 
         view.evaluateJavascript("$JAVASCRIPT_BRIDGE_NAME.inject()") {
             // remove unwanted elements
             for (unwanted in listOf(
-                "menu-area", // pid issuer useless menu in wrapped mode
-                "ReactModalPortal"
+                "menu-area",
+                "ReactModalPortal",
             )) {
                 view.evaluateJavascript(
                     """
-                            while(document.getElementsByClassName('$unwanted').length > 0) {
-                                document.getElementsByClassName('$unwanted')[0].remove()
-                            }
-                        """.trimIndent()
+                    while(document.getElementsByClassName('$unwanted').length > 0) {
+                        document.getElementsByClassName('$unwanted')[0].remove()
+                    }
+                    """.trimIndent(),
                 ) {
                     Log.i(tagForLog, "Hardening: Deleted $unwanted class from html.")
                 }
@@ -93,14 +98,14 @@ class WalletWebViewClient (
             )) {
                 view.evaluateJavascript(
                     """
-                        for (let elem of document.getElementsByTagName("a")) {
-                            if(elem.href.indexOf("$unwanted") > -1 && elem.href.indexOf("view://") == -1) {
-                                let old = elem.href
-                                elem.setAttribute('href', old.replace('https://','view://'))
-                                console.log("Hardening: Redirected from", old, "to", elem.href)
-                            }
+                    for (let elem of document.getElementsByTagName("a")) {
+                        if(elem.href.indexOf("$unwanted") > -1 && elem.href.indexOf("view://") == -1) {
+                            let old = elem.href
+                            elem.setAttribute('href', old.replace('https://','view://'))
+                            console.log("Hardening: Redirected from", old, "to", elem.href)
                         }
-                    """.trimIndent()
+                    }
+                    """.trimIndent(),
                 ) {}
             }
         }
@@ -109,7 +114,7 @@ class WalletWebViewClient (
     override fun onReceivedSslError(
         view: WebView,
         handler: SslErrorHandler,
-        error: SslError
+        error: SslError,
     ) {
         view.evaluateJavascript("console.log('SSL Error: \"$error\"');") {}
         handler.proceed()

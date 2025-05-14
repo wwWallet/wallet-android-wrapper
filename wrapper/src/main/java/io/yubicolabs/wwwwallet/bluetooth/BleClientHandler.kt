@@ -2,7 +2,6 @@
 
 package io.yubicolabs.wwwwallet.bluetooth
 
-
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -23,7 +22,9 @@ import android.bluetooth.le.ScanSettings
 import android.content.pm.PackageManager
 import android.os.ParcelUuid
 import android.util.Log
-import io.yubicolabs.wwwwallet.bluetooth.BleClientHandler.State.*
+import io.yubicolabs.wwwwallet.bluetooth.BleClientHandler.State.Connected
+import io.yubicolabs.wwwwallet.bluetooth.BleClientHandler.State.Disconnected
+import io.yubicolabs.wwwwallet.bluetooth.BleClientHandler.State.Scanning
 import io.yubicolabs.wwwwallet.bluetooth.ServiceCharacteristic.Companion.ClientToServer
 import io.yubicolabs.wwwwallet.bluetooth.debug.PrintingBluetoothGattCallback
 import io.yubicolabs.wwwwallet.bluetooth.debug.PrintingScanCallback
@@ -45,7 +46,6 @@ class BleClientHandler(
             val server: BluetoothGatt,
             val service: BluetoothGattService,
             val device: BluetoothDevice,
-
             val readCallback: ((ByteArray?) -> Unit)? = null,
             val writeCallback: (() -> Unit)? = null,
         ) : State()
@@ -64,250 +64,258 @@ class BleClientHandler(
 
     var state: State = Disconnected
 
-    val gattCallback = object : PrintingBluetoothGattCallback() {
-        override fun onConnectionStateChange(
-            gatt: BluetoothGatt?,
-            status: Int,
-            newState: Int
-        ) {
-            super.onConnectionStateChange(gatt, status, newState)
+    val gattCallback =
+        object : PrintingBluetoothGattCallback() {
+            override fun onConnectionStateChange(
+                gatt: BluetoothGatt?,
+                status: Int,
+                newState: Int,
+            ) {
+                super.onConnectionStateChange(gatt, status, newState)
 
-            if (gatt != null) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.d(tagForLog, "Connected")
-                    try {
-                        gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
-                        gatt.requestMtu(517)
-                        gatt.discoverServices()
-
-                    } catch (e: SecurityException) {
-                        Log.e(
-                            tagForLog,
-                            "Couldn't connect to gatt",
-                            e
-                        )
-
-                        if (state is Scanning) {
-                            (state as Scanning).failureCallback()
-                        }
-                    }
-                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    state.let {
-                        when (it) {
-                            is Connected -> {
-                                it.server.close()
-                            }
-
-                            is Scanning -> {
-                                it.scanner.stopScan(scanCallback)
-                            }
-
-                            Disconnected -> {
-                                // Already disconnected
-                            }
-                        }
-                    }
-
-                    state = Disconnected
-                    Log.d(tagForLog, "Disconnected")
-                }
-            }
-        }
-
-        override fun onReliableWriteCompleted(
-            gatt: BluetoothGatt?,
-            status: Int
-        ) {
-            super.onReliableWriteCompleted(gatt, status)
-        }
-
-        override fun onServiceChanged(gatt: BluetoothGatt) {
-            super.onServiceChanged(gatt)
-        }
-
-        override fun onCharacteristicChanged(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            value: ByteArray
-        ) {
-            Thread.sleep(100) // 👀 slow down communication
-            super.onCharacteristicChanged(gatt, characteristic, value)
-
-            if (characteristic.uuid == ServiceCharacteristic.ServerToClient.uuid) {
-                if (state is Connected) {
-                    (state as Connected).readCallback?.invoke(value)
-                }
-            }
-        }
-
-        override fun onCharacteristicRead(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            value: ByteArray,
-            status: Int
-        ) {
-            super.onCharacteristicRead(
-                gatt,
-                characteristic,
-                value,
-                status
-            )
-
-            state.let {
-                when (it) {
-                    is Connected -> {
-                        it.readCallback?.invoke(value)
-
-                        state = it.copy(
-                            readCallback = null
-                        )
-                    }
-
-                    is Disconnected -> Log.e(tagForLog, "Cannot read in disconnected state.")
-                    is Scanning -> Log.e(tagForLog, "Trying to read while scanning.")
-                }
-            }
-        }
-
-        override fun onCharacteristicWrite(
-            gatt: BluetoothGatt?,
-            characteristic: BluetoothGattCharacteristic?,
-            status: Int
-        ) {
-            Thread.sleep(100) // 👀 slow down communication
-            super.onCharacteristicWrite(gatt, characteristic, status)
-
-            state.let {
-                when (it) {
-                    is Connected -> {
-                        when (characteristic?.uuid) {
-                            ServiceCharacteristic.ServerToClient.uuid -> {
-                                it.writeCallback?.invoke()
-                                state = it.copy(
-                                    writeCallback = null
-                                )
-                            }
-
-                            ServiceCharacteristic.ClientToServer.uuid -> {
-                                it.writeCallback?.invoke()
-                                state = it.copy(
-                                    writeCallback = null
-                                )
-                            }
-
-                            ServiceCharacteristic.State.uuid -> {
-                                it.writeCallback?.invoke()
-                                state = it.copy(
-                                    writeCallback = null
-                                )
-                            }
-
-                            else -> Log.e(
+                if (gatt != null) {
+                    if (newState == BluetoothProfile.STATE_CONNECTED) {
+                        Log.d(tagForLog, "Connected")
+                        try {
+                            gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
+                            gatt.requestMtu(517)
+                            gatt.discoverServices()
+                        } catch (e: SecurityException) {
+                            Log.e(
                                 tagForLog,
-                                "Cannot write to UUID '${characteristic?.uuid}'."
+                                "Couldn't connect to gatt",
+                                e,
                             )
+
+                            if (state is Scanning) {
+                                (state as Scanning).failureCallback()
+                            }
                         }
-                    }
-
-                    is Disconnected -> Log.e(tagForLog, "Cannot write in disconnected state.")
-                    is Scanning -> Log.e(tagForLog, "Trying to write while scanning.")
-                }
-            }
-        }
-
-        override fun onDescriptorWrite(
-            gatt: BluetoothGatt?,
-            descriptor: BluetoothGattDescriptor?,
-            status: Int
-        ) {
-            super.onDescriptorWrite(gatt, descriptor, status)
-            if (descriptor?.uuid == ServiceCharacteristic.CharacteristicConfigurationDescriptorUUID) {
-                val characteristic = descriptor.characteristic
-                gatt?.setCharacteristicNotification(characteristic, true)
-            }
-        }
-
-        override fun onServicesDiscovered(
-            gatt: BluetoothGatt?,
-            status: Int
-        ) {
-            super.onServicesDiscovered(gatt, status)
-
-            if (status == GATT_SUCCESS && gatt != null) {
-                state.let {
-                    when (it) {
-                        is Scanning -> {
-                            val service = gatt.getService(it.serviceUuid)
-                            if (service != null) {
-                                val char = service
-                                    .getCharacteristic(ServiceCharacteristic.ServerToClient.uuid)
-                                if (char == null) {
-                                    Log.e(
-                                        tagForLog,
-                                        "ServerToClient (${ServiceCharacteristic.ServerToClient.uuid}) not found."
-                                    )
-                                } else {
-                                    gatt.setCharacteristicNotification(char, true)
+                    } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        state.let {
+                            when (it) {
+                                is Connected -> {
+                                    it.server.close()
                                 }
 
-                                state = Connected(
-                                    gatt,
-                                    service,
-                                    gatt.device,
-                                    null
-                                )
+                                is Scanning -> {
+                                    it.scanner.stopScan(scanCallback)
+                                }
 
-                                val bleStateChar = service.getCharacteristic(
-                                    ServiceCharacteristic.State.uuid
-                                )
-                                gatt.writeCharacteristic(
-                                    bleStateChar,
-                                    byteArrayOf(0x1),
-                                    WRITE_TYPE_NO_RESPONSE
-                                )
-
-                                it.successCallback()
-                            } else {
-                                Log.e(
-                                    tagForLog,
-                                    "Service with ${it.serviceUuid} not found."
-                                )
-                                it.failureCallback()
+                                Disconnected -> {
+                                    // Already disconnected
+                                }
                             }
                         }
 
-                        else -> Log.e(tagForLog, "Discovered a service while not scanning.")
+                        state = Disconnected
+                        Log.d(tagForLog, "Disconnected")
+                    }
+                }
+            }
+
+            override fun onReliableWriteCompleted(
+                gatt: BluetoothGatt?,
+                status: Int,
+            ) {
+                super.onReliableWriteCompleted(gatt, status)
+            }
+
+            override fun onServiceChanged(gatt: BluetoothGatt) {
+                super.onServiceChanged(gatt)
+            }
+
+            override fun onCharacteristicChanged(
+                gatt: BluetoothGatt,
+                characteristic: BluetoothGattCharacteristic,
+                value: ByteArray,
+            ) {
+                Thread.sleep(100) // 👀 slow down communication
+                super.onCharacteristicChanged(gatt, characteristic, value)
+
+                if (characteristic.uuid == ServiceCharacteristic.ServerToClient.uuid) {
+                    if (state is Connected) {
+                        (state as Connected).readCallback?.invoke(value)
+                    }
+                }
+            }
+
+            override fun onCharacteristicRead(
+                gatt: BluetoothGatt,
+                characteristic: BluetoothGattCharacteristic,
+                value: ByteArray,
+                status: Int,
+            ) {
+                super.onCharacteristicRead(
+                    gatt,
+                    characteristic,
+                    value,
+                    status,
+                )
+
+                state.let {
+                    when (it) {
+                        is Connected -> {
+                            it.readCallback?.invoke(value)
+
+                            state =
+                                it.copy(
+                                    readCallback = null,
+                                )
+                        }
+
+                        is Disconnected -> Log.e(tagForLog, "Cannot read in disconnected state.")
+                        is Scanning -> Log.e(tagForLog, "Trying to read while scanning.")
+                    }
+                }
+            }
+
+            override fun onCharacteristicWrite(
+                gatt: BluetoothGatt?,
+                characteristic: BluetoothGattCharacteristic?,
+                status: Int,
+            ) {
+                Thread.sleep(100) // 👀 slow down communication
+                super.onCharacteristicWrite(gatt, characteristic, status)
+
+                state.let {
+                    when (it) {
+                        is Connected -> {
+                            when (characteristic?.uuid) {
+                                ServiceCharacteristic.ServerToClient.uuid -> {
+                                    it.writeCallback?.invoke()
+                                    state =
+                                        it.copy(
+                                            writeCallback = null,
+                                        )
+                                }
+
+                                ServiceCharacteristic.ClientToServer.uuid -> {
+                                    it.writeCallback?.invoke()
+                                    state =
+                                        it.copy(
+                                            writeCallback = null,
+                                        )
+                                }
+
+                                ServiceCharacteristic.State.uuid -> {
+                                    it.writeCallback?.invoke()
+                                    state =
+                                        it.copy(
+                                            writeCallback = null,
+                                        )
+                                }
+
+                                else ->
+                                    Log.e(
+                                        tagForLog,
+                                        "Cannot write to UUID '${characteristic?.uuid}'.",
+                                    )
+                            }
+                        }
+
+                        is Disconnected -> Log.e(tagForLog, "Cannot write in disconnected state.")
+                        is Scanning -> Log.e(tagForLog, "Trying to write while scanning.")
+                    }
+                }
+            }
+
+            override fun onDescriptorWrite(
+                gatt: BluetoothGatt?,
+                descriptor: BluetoothGattDescriptor?,
+                status: Int,
+            ) {
+                super.onDescriptorWrite(gatt, descriptor, status)
+                if (descriptor?.uuid == ServiceCharacteristic.CharacteristicConfigurationDescriptorUUID) {
+                    val characteristic = descriptor.characteristic
+                    gatt?.setCharacteristicNotification(characteristic, true)
+                }
+            }
+
+            override fun onServicesDiscovered(
+                gatt: BluetoothGatt?,
+                status: Int,
+            ) {
+                super.onServicesDiscovered(gatt, status)
+
+                if (status == GATT_SUCCESS && gatt != null) {
+                    state.let {
+                        when (it) {
+                            is Scanning -> {
+                                val service = gatt.getService(it.serviceUuid)
+                                if (service != null) {
+                                    val char =
+                                        service
+                                            .getCharacteristic(ServiceCharacteristic.ServerToClient.uuid)
+                                    if (char == null) {
+                                        Log.e(
+                                            tagForLog,
+                                            "ServerToClient (${ServiceCharacteristic.ServerToClient.uuid}) not found.",
+                                        )
+                                    } else {
+                                        gatt.setCharacteristicNotification(char, true)
+                                    }
+
+                                    state =
+                                        Connected(
+                                            gatt,
+                                            service,
+                                            gatt.device,
+                                            null,
+                                        )
+
+                                    val bleStateChar =
+                                        service.getCharacteristic(
+                                            ServiceCharacteristic.State.uuid,
+                                        )
+                                    gatt.writeCharacteristic(
+                                        bleStateChar,
+                                        byteArrayOf(0x1),
+                                        WRITE_TYPE_NO_RESPONSE,
+                                    )
+
+                                    it.successCallback()
+                                } else {
+                                    Log.e(
+                                        tagForLog,
+                                        "Service with ${it.serviceUuid} not found.",
+                                    )
+                                    it.failureCallback()
+                                }
+                            }
+
+                            else -> Log.e(tagForLog, "Discovered a service while not scanning.")
+                        }
                     }
                 }
             }
         }
-    }
 
-    val scanCallback: ScanCallback = object : PrintingScanCallback() {
-        override fun onScanResult(
-            callbackType: Int,
-            result: ScanResult?
-        ) {
-            super.onScanResult(callbackType, result)
-            state.let {
-                if (it !is Scanning) {
-                    Log.e(tagForLog, "Scanning stopped while not in scanning state.")
-                } else {
+    val scanCallback: ScanCallback =
+        object : PrintingScanCallback() {
+            override fun onScanResult(
+                callbackType: Int,
+                result: ScanResult?,
+            ) {
+                super.onScanResult(callbackType, result)
+                state.let {
+                    if (it !is Scanning) {
+                        Log.e(tagForLog, "Scanning stopped while not in scanning state.")
+                    } else {
+                        it.scanner.stopScan(scanCallback)
 
-                    it.scanner.stopScan(scanCallback)
-
-                    result
-                        ?.device
-                        ?.connectGatt(
-                            activity,
-                            false,
-                            gattCallback,
-                            BluetoothDevice.TRANSPORT_LE
-                        )
+                        result
+                            ?.device
+                            ?.connectGatt(
+                                activity,
+                                false,
+                                gattCallback,
+                                BluetoothDevice.TRANSPORT_LE,
+                            )
+                    }
                 }
             }
         }
-    }
 
     fun status(): String {
         return state.let {
@@ -337,35 +345,38 @@ class BleClientHandler(
         }
 
         val serviceUuid = UUID.fromString(serviceUuid)
-        val settings = ScanSettings
-            .Builder()
-            .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .build()
+        val settings =
+            ScanSettings
+                .Builder()
+                .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .build()
 
         val scanner = adapter.bluetoothLeScanner
-        state = Scanning(
-            serviceUuid,
-            scanner,
-            success,
-            failure
-        )
+        state =
+            Scanning(
+                serviceUuid,
+                scanner,
+                success,
+                failure,
+            )
 
-        val filterList = listOf(
-            ScanFilter
-                .Builder()
-                .setServiceUuid(
-                    ParcelUuid(
-                        serviceUuid
-                    )
-                ).build()
-        )
+        val filterList =
+            listOf(
+                ScanFilter
+                    .Builder()
+                    .setServiceUuid(
+                        ParcelUuid(
+                            serviceUuid,
+                        ),
+                    ).build(),
+            )
 
         try {
             scanner!!.startScan(
                 filterList,
                 settings,
-                scanCallback
+                scanCallback,
             )
         } catch (e: SecurityException) {
             Log.e(tagForLog, "Couldn't start scanning.", e)
@@ -402,18 +413,19 @@ class BleClientHandler(
                     it.server.writeCharacteristic(
                         characteristic,
                         payload,
-                        WRITE_TYPE_DEFAULT
+                        WRITE_TYPE_DEFAULT,
                     )
 
-                    state = it.copy(
-                        writeCallback = success
-                    )
+                    state =
+                        it.copy(
+                            writeCallback = success,
+                        )
                 }
 
                 else -> {
                     Log.e(
                         tagForLog,
-                        "Cannot send in state ${it.javaClass.simpleName} to server."
+                        "Cannot send in state ${it.javaClass.simpleName} to server.",
                     )
                     failure()
                 }

@@ -18,20 +18,20 @@ private const val REGISTRATION_RESPONSE_BUNDLE_KEY =
 class NavigatorCredentialsContainerAndroid(
     val activity: Activity,
 ) : NavigatorCredentialsContainer {
-
     val manager = CredentialManager.create(activity)
 
     override fun create(
         options: JSONObject,
         successCallback: (JSONObject) -> Unit,
-        failureCallback: (Throwable) -> Unit
+        failureCallback: (Throwable) -> Unit,
     ) {
         CoroutineScope(EmptyCoroutineContext).launch {
             try {
-                val result = manager.createCredential(
-                    context = activity,
-                    request = options.toCreateRequestOption()
-                )
+                val result =
+                    manager.createCredential(
+                        context = activity,
+                        request = options.toCreateRequestOption(),
+                    )
 
                 val rawResult = result.data.getString(REGISTRATION_RESPONSE_BUNDLE_KEY) ?: ""
 
@@ -45,20 +45,22 @@ class NavigatorCredentialsContainerAndroid(
     override fun get(
         options: JSONObject,
         successCallback: (JSONObject) -> Unit,
-        failureCallback: (Throwable) -> Unit
+        failureCallback: (Throwable) -> Unit,
     ) {
         CoroutineScope(EmptyCoroutineContext).launch {
             try {
-                val result = manager.getCredential(
-                    context = activity,
-                    request = options.toGetRequestOption()
-                )
+                val result =
+                    manager.getCredential(
+                        context = activity,
+                        request = options.toGetRequestOption(),
+                    )
 
-                val rawResult = if(result.credential is PublicKeyCredential) {
-                    (result.credential as PublicKeyCredential).authenticationResponseJson
-                } else {
-                    """ {"error":"no public key credential returned", "actual":"$result"} """.trim()
-                }
+                val rawResult =
+                    if (result.credential is PublicKeyCredential) {
+                        (result.credential as PublicKeyCredential).authenticationResponseJson
+                    } else {
+                        """ {"error":"no public key credential returned", "actual":"$result"} """.trim()
+                    }
 
                 successCallback(JSONObject(rawResult))
             } catch (th: Throwable) {
@@ -70,13 +72,15 @@ class NavigatorCredentialsContainerAndroid(
 
 private fun JSONObject.toCreateRequestOption(): CreateCredentialRequest =
     CreatePublicKeyCredentialRequest(
-        getJSONObject("publicKey").toString()
+        getJSONObject("publicKey").toString(),
     )
 
-private fun JSONObject.toGetRequestOption(): GetCredentialRequest = GetCredentialRequest(
-    credentialOptions = listOf(
-        GetPublicKeyCredentialOption(
-            requestJson = getString("publicKey").toString(),
-        )
+private fun JSONObject.toGetRequestOption(): GetCredentialRequest =
+    GetCredentialRequest(
+        credentialOptions =
+            listOf(
+                GetPublicKeyCredentialOption(
+                    requestJson = getString("publicKey").toString(),
+                ),
+            ),
     )
-)

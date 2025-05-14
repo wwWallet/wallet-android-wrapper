@@ -17,7 +17,6 @@ import com.yubico.webauthn.data.PublicKeyCredentialRequestOptions
 import com.yubico.webauthn.data.UserVerificationRequirement
 import de.adesso.softauthn.Authenticators
 import de.adesso.softauthn.CredentialsContainer
-import com.yubico.webauthn.data.ByteArray as YubiBytes
 import de.adesso.softauthn.Origin
 import de.adesso.softauthn.authenticator.WebAuthnAuthenticator
 import io.yubicolabs.wwwwallet.BuildConfig
@@ -29,17 +28,17 @@ import java.net.URL
 import java.util.SortedSet
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.jvm.optionals.getOrNull
-
+import com.yubico.webauthn.data.ByteArray as YubiBytes
 
 internal class SoftwareCredentialsContainer : NavigatorCredentialsContainer {
     private val authenticator: WebAuthnAuthenticator = Authenticators.yubikey5Nfc().build()
     private val origin = URL(BuildConfig.BASE_URL).toOrigin()
-    private val credentials = CredentialsContainer(origin, listOf(authenticator));
+    private val credentials = CredentialsContainer(origin, listOf(authenticator))
 
     override fun create(
         options: JSONObject,
         successCallback: (JSONObject) -> Unit,
-        failureCallback: (Throwable) -> Unit
+        failureCallback: (Throwable) -> Unit,
     ) = try {
         val publicKey = options.getJSONObject("publicKey")
         if (publicKey.has("hints")) {
@@ -58,7 +57,7 @@ internal class SoftwareCredentialsContainer : NavigatorCredentialsContainer {
     override fun get(
         options: JSONObject,
         successCallback: (JSONObject) -> Unit,
-        failureCallback: (Throwable) -> Unit
+        failureCallback: (Throwable) -> Unit,
     ) = try {
         val credential = credentials.get(options.getJSONObject("publicKey").toPKCRO())
         val response = credential.toAssertionJson()
@@ -68,19 +67,18 @@ internal class SoftwareCredentialsContainer : NavigatorCredentialsContainer {
     }
 }
 
-
 private fun URL.toOrigin() = Origin("https", host, -1, null)
 
-private fun JSONObject.toPKCCO(): PublicKeyCredentialCreationOptions =
-    PublicKeyCredentialCreationOptions.fromJson(toString())
+private fun JSONObject.toPKCCO(): PublicKeyCredentialCreationOptions = PublicKeyCredentialCreationOptions.fromJson(toString())
 
 private fun JSONObject.toPKCRO(): PublicKeyCredentialRequestOptions {
     val challenge = YubiBytes.fromBase64Url(getString("challenge"))
 
-    val builder = PublicKeyCredentialRequestOptions.builder()
-        .challenge(challenge)
-        .rpId(getString("rpId"))
-        .allowCredentials(getJSONArray("allowCredentials").toPublicKeyCredentialDescriptors())
+    val builder =
+        PublicKeyCredentialRequestOptions.builder()
+            .challenge(challenge)
+            .rpId(getString("rpId"))
+            .allowCredentials(getJSONArray("allowCredentials").toPublicKeyCredentialDescriptors())
 
     if (has("userVerification")) {
         builder.userVerification(getString("userVerification").toUserVerificationRequirement())
@@ -89,12 +87,13 @@ private fun JSONObject.toPKCRO(): PublicKeyCredentialRequestOptions {
     return builder.build()
 }
 
-private fun String.toUserVerificationRequirement(): UserVerificationRequirement = when (this) {
-    "discouraged" -> UserVerificationRequirement.DISCOURAGED
-    "preferred" -> UserVerificationRequirement.PREFERRED
-    "required" -> UserVerificationRequirement.REQUIRED
-    else -> UserVerificationRequirement.REQUIRED
-}
+private fun String.toUserVerificationRequirement(): UserVerificationRequirement =
+    when (this) {
+        "discouraged" -> UserVerificationRequirement.DISCOURAGED
+        "preferred" -> UserVerificationRequirement.PREFERRED
+        "required" -> UserVerificationRequirement.REQUIRED
+        else -> UserVerificationRequirement.REQUIRED
+    }
 
 private fun JSONArray.toPublicKeyCredentialDescriptors(): List<PublicKeyCredentialDescriptor> =
     toList().mapNotNull {
@@ -127,33 +126,35 @@ private fun PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionE
                 "type" to type.name,
                 "clientExtensionResults" to extensionResultsJson,
                 "response" to responseJson,
-            ).filter { entry -> entry.value != null }
+            ).filter { entry -> entry.value != null },
         )
     }
 
-private fun AuthenticatorAssertionResponse.toJson(): JSONObject = JSONObject(
-    mapOf(
-        "authenticatorData" to authenticatorData.base64Url,
-        "clientDataJSON" to clientDataJSON.base64Url,
-        "signature" to signature.base64Url,
-        "userHandle" to userHandle.getOrNull()?.base64Url,
-        "clientData" to clientData.toJson(),
-    ).filter { entry -> entry.value != null }
-)
+private fun AuthenticatorAssertionResponse.toJson(): JSONObject =
+    JSONObject(
+        mapOf(
+            "authenticatorData" to authenticatorData.base64Url,
+            "clientDataJSON" to clientDataJSON.base64Url,
+            "signature" to signature.base64Url,
+            "userHandle" to userHandle.getOrNull()?.base64Url,
+            "clientData" to clientData.toJson(),
+        ).filter { entry -> entry.value != null },
+    )
 
-private fun ClientAssertionExtensionOutputs.toJson(): JSONObject = JSONObject(
-    mapOf(
-        "appid" to appid.getOrNull(),
-        "largeBlob" to largeBlob.getOrNull()?.toJson()
-    ).filter { entry -> entry.value != null }
-)
+private fun ClientAssertionExtensionOutputs.toJson(): JSONObject =
+    JSONObject(
+        mapOf(
+            "appid" to appid.getOrNull(),
+            "largeBlob" to largeBlob.getOrNull()?.toJson(),
+        ).filter { entry -> entry.value != null },
+    )
 
 private fun Extensions.LargeBlob.LargeBlobAuthenticationOutput.toJson(): JSONObject =
     JSONObject(
         mapOf(
             "blob" to blob.getOrNull()?.base64Url,
             "written" to written.getOrNull(),
-        ).filter { entry -> entry.value != null }
+        ).filter { entry -> entry.value != null },
     )
 
 private fun PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs>?.toAttestationJson(): JSONObject =
@@ -170,37 +171,41 @@ private fun PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistra
                 "type" to type.name,
                 "clientExtensionResults" to extensionResults,
                 "response" to response,
-            ).filter { entry -> entry.value != null }
+            ).filter { entry -> entry.value != null },
         )
     }
 
-private fun ClientRegistrationExtensionOutputs.toJson() = JSONObject(
-    mapOf(
-        "appidExclude" to appidExclude.getOrNull(),
-        "credProps" to credProps.getOrNull(),
-        "largeBlob" to largeBlob.getOrNull(),
-    ).filter { entry -> entry.value != null }
-)
+private fun ClientRegistrationExtensionOutputs.toJson() =
+    JSONObject(
+        mapOf(
+            "appidExclude" to appidExclude.getOrNull(),
+            "credProps" to credProps.getOrNull(),
+            "largeBlob" to largeBlob.getOrNull(),
+        ).filter { entry -> entry.value != null },
+    )
 
-private fun AuthenticatorAttestationResponse.toJson() = JSONObject(
-    mapOf(
-        "attestationObject" to attestationObject.base64Url,
-        "clientData" to clientData.toJson(),
-        "clientDataJSON" to clientDataJSON.base64Url,
-        "transports" to transports.toJson(),
-    ).filter { entry -> entry.value != null }
-)
+private fun AuthenticatorAttestationResponse.toJson() =
+    JSONObject(
+        mapOf(
+            "attestationObject" to attestationObject.base64Url,
+            "clientData" to clientData.toJson(),
+            "clientDataJSON" to clientDataJSON.base64Url,
+            "transports" to transports.toJson(),
+        ).filter { entry -> entry.value != null },
+    )
 
-private fun CollectedClientData.toJson() = JSONObject(
-    mapOf(
-        "challenge" to challenge.base64Url,
-        "origin" to origin,
-        "type" to type,
-    ).filter { entry -> entry.value != null }
-)
+private fun CollectedClientData.toJson() =
+    JSONObject(
+        mapOf(
+            "challenge" to challenge.base64Url,
+            "origin" to origin,
+            "type" to type,
+        ).filter { entry -> entry.value != null },
+    )
 
-private fun SortedSet<AuthenticatorTransport>.toJson() = JSONArray(
-    mapNotNull {
-        it.id
-    }
-)
+private fun SortedSet<AuthenticatorTransport>.toJson() =
+    JSONArray(
+        mapNotNull {
+            it.id
+        },
+    )

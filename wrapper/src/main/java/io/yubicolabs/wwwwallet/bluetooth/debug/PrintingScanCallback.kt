@@ -6,7 +6,10 @@ import android.util.Log
 import io.yubicolabs.wwwwallet.tagForLog
 
 open class PrintingScanCallback : ScanCallback() {
-    override fun onScanResult(callbackType: Int, result: ScanResult?) {
+    override fun onScanResult(
+        callbackType: Int,
+        result: ScanResult?,
+    ) {
         Log.d(tagForLog, "onScanResult: callbackType=$callbackType result=$result")
 
         super.onScanResult(callbackType, result)

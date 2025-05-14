@@ -9,14 +9,14 @@ class SoftwareCredentialsContainer : NavigatorCredentialsContainer {
     override fun create(
         options: JSONObject,
         successCallback: (JSONObject) -> Unit,
-        failureCallback: (Throwable) -> Unit
+        failureCallback: (Throwable) -> Unit,
     ) {
     }
 
     override fun get(
         options: JSONObject,
         successCallback: (JSONObject) -> Unit,
-        failureCallback: (Throwable) -> Unit
+        failureCallback: (Throwable) -> Unit,
     ) {
     }
 }

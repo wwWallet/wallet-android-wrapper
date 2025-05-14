@@ -10,15 +10,19 @@ import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_DENIED
 import android.util.Log
 
-fun ByteArray?.toHumanReadable(): String = if (this == null) {
-    byteArrayOf()
-} else {
-    this
-}.joinToString(separator = " ") { b ->
-    "0x%02x".format(b)
-}
+fun ByteArray?.toHumanReadable(): String =
+    if (this == null) {
+        byteArrayOf()
+    } else {
+        this
+    }.joinToString(separator = " ") { b ->
+        "0x%02x".format(b)
+    }
 
-fun checkBluetoothPermissions(activity: Activity, adapter: BluetoothAdapter?): Boolean {
+fun checkBluetoothPermissions(
+    activity: Activity,
+    adapter: BluetoothAdapter?,
+): Boolean {
     if (adapter == null) {
         Log.e("BLEPERM", "No bluetooth device.")
         return false
