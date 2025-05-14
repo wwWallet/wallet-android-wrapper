@@ -6,25 +6,29 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 
-class ParsingTest {
+class JSCodeSnippetTest {
     @Test
     fun loadRawStringSnippet() {
-        val code = JSCodeSnippet(
-            """
+        val code =
+            JSCodeSnippet(
+                """
                 window.alert("REPLACEME injected!")
-            """.trimIndent(), listOf(
-                "REPLACEME" to "foo bar"
+                """.trimIndent(),
+                listOf(
+                    "REPLACEME" to "foo bar",
+                ),
             )
-        )
 
         assertNotNull(code.code)
 
         assertThat(
-            code.code, not(containsString("REPLACEME"))
+            code.code,
+            not(containsString("REPLACEME")),
         )
 
         assertThat(
-            code.code, containsString("foo bar")
+            code.code,
+            containsString("foo bar"),
         )
     }
 }

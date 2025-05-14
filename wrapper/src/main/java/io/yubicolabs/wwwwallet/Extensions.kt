@@ -5,8 +5,9 @@ package io.yubicolabs.wwwwallet
  * @return name for this class, or a placeholder.
  */
 inline val Any?.tagForLog: String
-    get() = try {
-        this?.javaClass?.simpleName ?: "<|>"
-    } catch (th: Throwable) {
-        "<||>"
-    }
+    get() =
+        try {
+            this?.javaClass?.simpleName ?: "<|>"
+        } catch (th: Throwable) {
+            "<||>"
+        }

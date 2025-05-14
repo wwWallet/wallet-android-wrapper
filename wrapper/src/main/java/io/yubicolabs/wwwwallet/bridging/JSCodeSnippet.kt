@@ -12,16 +12,17 @@ class JSCodeSnippet(
         fun fromRawResource(
             context: Context,
             resource: String,
-            replacements: List<Pair<String, String>>
-        ): JSCodeSnippet = JSCodeSnippet(
-            String(
-                context
-                    .assets
-                    .open(resource)
-                    .readAllBytes()
-            ),
-            replacements
-        )
+            replacements: List<Pair<String, String>>,
+        ): JSCodeSnippet =
+            JSCodeSnippet(
+                String(
+                    context
+                        .assets
+                        .open(resource)
+                        .readAllBytes(),
+                ),
+                replacements,
+            )
     }
 }
 

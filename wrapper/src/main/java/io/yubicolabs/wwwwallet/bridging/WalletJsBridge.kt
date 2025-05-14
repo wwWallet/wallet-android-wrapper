@@ -27,7 +27,7 @@ class WalletJsBridge(
     private val emulatedCredentialsContainer: NavigatorCredentialsContainer,
     private val bleClientHandler: BleClientHandler,
     private val bleServerHandler: BleServerHandler,
-    private val debugMenuHandler: DebugMenuHandler?
+    private val debugMenuHandler: DebugMenuHandler?,
 ) {
     companion object {
         const val JAVASCRIPT_BRIDGE_NAME = "nativeWrapper"
@@ -42,18 +42,19 @@ class WalletJsBridge(
 
             var selectedContainer: NavigatorCredentialsContainer? = null
             for (hint in hints) {
-                selectedContainer = when (hint) {
-                    "security-key" -> securityKeyCredentialsContainer
-                    "client-device" -> clientDeviceCredentialsContainer
-                    "hybrid" -> null // explicitly not supported
-                    // not in spec: added for testing
-                    "emulator" -> emulatedCredentialsContainer
-                    else -> {
-                        // error case: unknown hint.
-                        Log.e(tagForLog, "Hint '$hint' not supported. Ignoring.")
-                        null
+                selectedContainer =
+                    when (hint) {
+                        "security-key" -> securityKeyCredentialsContainer
+                        "client-device" -> clientDeviceCredentialsContainer
+                        "hybrid" -> null // explicitly not supported
+                        // not in spec: added for testing
+                        "emulator" -> emulatedCredentialsContainer
+                        else -> {
+                            // error case: unknown hint.
+                            Log.e(tagForLog, "Hint '$hint' not supported. Ignoring.")
+                            null
+                        }
                     }
-                }
 
                 if (selectedContainer != null) {
                     break
@@ -65,11 +66,10 @@ class WalletJsBridge(
             Log.i(
                 tagForLog,
                 "'hints' field in credential options not found, defaulting back to 'security-key'.",
-                jsonException
+                jsonException,
             )
             securityKeyCredentialsContainer
         }
-
 
     /**
      * Call this to overwrite the `navigator.credentials.[get|create]` methods.
@@ -79,16 +79,20 @@ class WalletJsBridge(
     fun inject() {
         Log.i(
             tagForLog,
-            "Adding `${javaClass.simpleName}` as `$JAVASCRIPT_BRIDGE_NAME` to JS."
+            "Adding `${javaClass.simpleName}` as `$JAVASCRIPT_BRIDGE_NAME` to JS.",
         )
 
         dispatcher.dispatch(EmptyCoroutineContext) {
-            val injectionSnippet = JSCodeSnippet.fromRawResource(
-                context = webView.context, resource = "injectjs.js", replacements = listOf(
-                    "JAVASCRIPT_BRIDGE" to JAVASCRIPT_BRIDGE_NAME,
-                    "JAVASCRIPT_VISUALIZE_INJECTION" to "${BuildConfig.VISUALIZE_INJECTION}"
+            val injectionSnippet =
+                JSCodeSnippet.fromRawResource(
+                    context = webView.context,
+                    resource = "injectjs.js",
+                    replacements =
+                        listOf(
+                            "JAVASCRIPT_BRIDGE" to JAVASCRIPT_BRIDGE_NAME,
+                            "JAVASCRIPT_VISUALIZE_INJECTION" to "${BuildConfig.VISUALIZE_INJECTION}",
+                        ),
                 )
-            )
 
             webView.evaluateJavascript(injectionSnippet.code) {
                 Log.i(it.tagForLog, it)
@@ -115,7 +119,7 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun create(
         promiseUuid: String,
-        options: String
+        options: String,
     ) {
         val mappedOptions = JSONObject(options)
         mappedOptions.setNested("publicKey.attestation", "none")
@@ -133,7 +137,7 @@ class WalletJsBridge(
                             console.log('credential creation failed', JSON.stringify("$th"))
                             alert('Credential creation failed: ' + JSON.stringify("${th.localizedMessage}"))
                             $JAVASCRIPT_BRIDGE_NAME.__reject__("$promiseUuid", JSON.stringify("$th"));
-                        """.trimIndent()
+                            """.trimIndent(),
                         ) {}
                     }
                 },
@@ -146,10 +150,10 @@ class WalletJsBridge(
                             var response = JSON.parse('$response')
                             console.log('credential created', response)
                             $JAVASCRIPT_BRIDGE_NAME.__resolve__("$promiseUuid", response);
-                        """.trimIndent()
+                            """.trimIndent(),
                         ) {}
                     }
-                }
+                },
             )
     }
 
@@ -157,7 +161,7 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun get(
         promiseUuid: String,
-        options: String
+        options: String,
     ) {
         Log.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.get($promiseUuid, $options) called.")
 
@@ -174,7 +178,7 @@ class WalletJsBridge(
                             console.log('credential getting failed', JSON.stringify("$th"))
                             alert('Credential getting failed: ' + JSON.stringify("${th.localizedMessage}"))
                             $JAVASCRIPT_BRIDGE_NAME.__reject__("$promiseUuid", JSON.stringify("$th"));
-                        """.trimIndent()
+                            """.trimIndent(),
                         ) {}
                     }
                 },
@@ -187,10 +191,10 @@ class WalletJsBridge(
                             var response = JSON.parse('$response')
                             console.log('credential getted', response)
                             $JAVASCRIPT_BRIDGE_NAME.__resolve__("$promiseUuid", response);
-                        """.trimIndent()
+                            """.trimIndent(),
                         ) {}
                     }
-                }
+                },
             )
     }
 
@@ -198,14 +202,14 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun bluetoothStatusWrapped(
         promiseUuid: String,
-        unusedParameter: String
+        unusedParameter: String,
     ) {
         resolvePromise(
             promiseUuid,
             // @formatter:off
             "Mode:   ${ServiceCharacteristic.mode.name}\\n\\n" +
-            "Server: ${bleServerHandler.status()}\\n\\n" +
-            "Client: ${bleClientHandler.status()}"
+                "Server: ${bleServerHandler.status()}\\n\\n" +
+                "Client: ${bleClientHandler.status()}",
             // @formatter:on
         )
     }
@@ -214,7 +218,7 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun bluetoothTerminateWrapped(
         promiseUuid: String,
-        unusedParameter: String
+        unusedParameter: String,
     ) {
         bleServerHandler.disconnect()
         bleClientHandler.disconnect()
@@ -222,17 +226,16 @@ class WalletJsBridge(
         resolvePromise(promiseUuid, "true")
     }
 
-
     @JavascriptInterface
     @SuppressLint("unused")
     fun bluetoothCreateServerWrapped(
         promiseUuid: String,
-        serviceUuid: String
+        serviceUuid: String,
     ) {
         bleServerHandler.createServer(
             serviceUuid = serviceUuid,
             success = { resolvePromise(promiseUuid, "true") },
-            failure = { rejectPromise(promiseUuid, "false") }
+            failure = { rejectPromise(promiseUuid, "false") },
         )
     }
 
@@ -245,7 +248,7 @@ class WalletJsBridge(
         bleClientHandler.createClient(
             serviceUuid = serviceUuid,
             success = { resolvePromise(promiseUuid, "true") },
-            failure = { rejectPromise(promiseUuid, "false") }
+            failure = { rejectPromise(promiseUuid, "false") },
         )
     }
 
@@ -253,14 +256,14 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun bluetoothSendToServerWrapped(
         promiseUuid: String,
-        rawParameter: String
+        rawParameter: String,
     ) {
         val parameter = JSONArray(rawParameter).toByteArray()
 
         bleClientHandler.sendToServer(
             parameter,
             success = { resolvePromise(promiseUuid, "true") },
-            failure = { rejectPromise(promiseUuid, "false") }
+            failure = { rejectPromise(promiseUuid, "false") },
         )
     }
 
@@ -268,14 +271,14 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun bluetoothSendToClientWrapped(
         promiseUuid: String,
-        rawParameter: String
+        rawParameter: String,
     ) {
         val parameter = JSONArray(rawParameter).toByteArray()
 
         bleServerHandler.sendToClient(
             parameter,
             success = { resolvePromise(promiseUuid, "true") },
-            failure = { rejectPromise(promiseUuid, "false") }
+            failure = { rejectPromise(promiseUuid, "false") },
         )
     }
 
@@ -283,11 +286,11 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun bluetoothReceiveFromClientWrapped(
         promiseUuid: String,
-        unusedParameter: String
+        unusedParameter: String,
     ) {
         bleServerHandler.receiveFromClient(
             success = { resolvePromise(promiseUuid, JSONArray(it).toString()) },
-            failure = { rejectPromise(promiseUuid, "null") }
+            failure = { rejectPromise(promiseUuid, "null") },
         )
     }
 
@@ -295,11 +298,11 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun bluetoothReceiveFromServerWrapped(
         promiseUuid: String,
-        unusedParameter: String
+        unusedParameter: String,
     ) {
         bleClientHandler.receiveFromServer(
             success = { resolvePromise(promiseUuid, JSONArray(it).toString()) },
-            failure = { rejectPromise(promiseUuid, "false") }
+            failure = { rejectPromise(promiseUuid, "false") },
         )
     }
 
@@ -315,37 +318,37 @@ class WalletJsBridge(
     @SuppressLint("unused")
     fun bluetoothGetMode(): String = ServiceCharacteristic.mode.name
 
-
     private fun resolvePromise(
         promiseUuid: String,
-        result: String
+        result: String,
     ) {
         dispatcher.dispatch(EmptyCoroutineContext) {
             val wrapped = JSONObject.wrap(result)
             webView.evaluateJavascript(
-                "${JAVASCRIPT_BRIDGE_NAME}.__resolve__('$promiseUuid', '$wrapped')"
+                "${JAVASCRIPT_BRIDGE_NAME}.__resolve__('$promiseUuid', '$wrapped')",
             ) {}
         }
     }
 
     private fun rejectPromise(
         promiseUuid: String,
-        result: String
+        result: String,
     ) {
         dispatcher.dispatch(EmptyCoroutineContext) {
             val wrapped = JSONObject.wrap(result)
             webView.evaluateJavascript(
-                "${JAVASCRIPT_BRIDGE_NAME}.__reject__('$promiseUuid', '$wrapped')"
+                "${JAVASCRIPT_BRIDGE_NAME}.__reject__('$promiseUuid', '$wrapped')",
             ) {}
         }
     }
 }
 
-private fun JSONArray.toByteArray(): ByteArray = (0 until length()).mapNotNull { index ->
-    val value = get(index)
-    if (value is Int) {
-        value.toByte()
-    } else {
-        null
-    }
-}.toByteArray()
+private fun JSONArray.toByteArray(): ByteArray =
+    (0 until length()).mapNotNull { index ->
+        val value = get(index)
+        if (value is Int) {
+            value.toByte()
+        } else {
+            null
+        }
+    }.toByteArray()

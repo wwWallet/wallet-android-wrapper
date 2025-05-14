@@ -13,7 +13,7 @@ class DebugMenuHandler(
         jsExecutor(
             """
             console.log("DEBUG MENU IGNORED IN RELEASE BUILD.");
-        """.trimIndent()
+            """.trimIndent(),
         ) {}
     }
 }

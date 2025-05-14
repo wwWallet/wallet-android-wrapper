@@ -27,9 +27,9 @@ class MainViewModel : ViewModel() {
         _url.update {
             when {
                 url.isBlank() or
-                        url.startsWith("http://") or
-                        url.startsWith("https://")
-                    -> url
+                    url.startsWith("http://") or
+                    url.startsWith("https://")
+                -> url
 
                 url.startsWith("openid4vp://") -> {
                     url.replace("openid4vp://", BuildConfig.BASE_URL)

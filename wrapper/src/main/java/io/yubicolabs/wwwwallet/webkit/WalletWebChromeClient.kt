@@ -15,13 +15,13 @@ import io.yubicolabs.wwwwallet.tagForLog
 private const val WEBKIT_VIDEO_PERMISSION = "android.webkit.resource.VIDEO_CAPTURE"
 
 class WalletWebChromeClient(
-    private val activity: ComponentActivity
+    private val activity: ComponentActivity,
 ) : WebChromeClient() {
     override fun onJsAlert(
         view: WebView?,
         url: String?,
         message: String?,
-        result: JsResult?
+        result: JsResult?,
     ): Boolean {
         Log.e("WEBVIEW", message ?: "<>")
 
@@ -45,11 +45,12 @@ class WalletWebChromeClient(
     ) {
         when (ContextCompat.checkSelfPermission(context, "android.permission.CAMERA")) {
             PackageManager.PERMISSION_GRANTED -> request.grant(arrayOf(resource))
-            PackageManager.PERMISSION_DENIED -> requestPermission(
-                "android.permission.CAMERA",
-                { request.grant(arrayOf(resource)) },
-                { request.deny() }
-            )
+            PackageManager.PERMISSION_DENIED ->
+                requestPermission(
+                    "android.permission.CAMERA",
+                    { request.grant(arrayOf(resource)) },
+                    { request.deny() },
+                )
         }
     }
 
@@ -57,7 +58,11 @@ class WalletWebChromeClient(
         super.onPermissionRequestCanceled(request)
     }
 
-    private fun requestPermission(input: String, granted: () -> Unit, denied: () -> Unit) {
+    private fun requestPermission(
+        input: String,
+        granted: () -> Unit,
+        denied: () -> Unit,
+    ) {
         permissionGranted = granted
         permissionDenied = denied
 

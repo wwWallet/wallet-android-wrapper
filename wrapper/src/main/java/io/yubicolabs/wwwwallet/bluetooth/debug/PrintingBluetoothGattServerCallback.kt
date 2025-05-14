@@ -17,7 +17,7 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
     override fun onConnectionStateChange(
         device: BluetoothDevice?,
         status: Int,
-        newState: Int
+        newState: Int,
     ) {
         Log.d(tagForLog, "onConnectionStateChange: $device, ${status.human}, ${newState.human}")
 
@@ -26,7 +26,7 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
 
     override fun onServiceAdded(
         status: Int,
-        service: BluetoothGattService?
+        service: BluetoothGattService?,
     ) {
         Log.d(tagForLog, "onServiceAdded: $status, $service")
 
@@ -37,11 +37,11 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
         device: BluetoothDevice?,
         requestId: Int,
         offset: Int,
-        characteristic: BluetoothGattCharacteristic?
+        characteristic: BluetoothGattCharacteristic?,
     ) {
         Log.d(
             tagForLog,
-            "onCharacteristicReadRequest: $device, $requestId, $offset, $characteristic"
+            "onCharacteristicReadRequest: $device, $requestId, $offset, $characteristic",
         )
 
         super.onCharacteristicReadRequest(device, requestId, offset, characteristic)
@@ -54,11 +54,11 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
         preparedWrite: Boolean,
         responseNeeded: Boolean,
         offset: Int,
-        value: ByteArray?
+        value: ByteArray?,
     ) {
         Log.d(
             tagForLog,
-            "onCharacteristicWriteRequest: $device, $requestId, $characteristic, $preparedWrite, $responseNeeded, $offset, ${value.toHumanReadable()}"
+            "onCharacteristicWriteRequest: $device, $requestId, $characteristic, $preparedWrite, $responseNeeded, $offset, ${value.toHumanReadable()}",
         )
 
         super.onCharacteristicWriteRequest(
@@ -68,7 +68,7 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
             preparedWrite,
             responseNeeded,
             offset,
-            value
+            value,
         )
     }
 
@@ -76,7 +76,7 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
         device: BluetoothDevice?,
         requestId: Int,
         offset: Int,
-        descriptor: BluetoothGattDescriptor?
+        descriptor: BluetoothGattDescriptor?,
     ) {
         Log.d(tagForLog, "onDescriptorReadRequest: $device, $requestId, $offset, $descriptor")
 
@@ -90,11 +90,11 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
         preparedWrite: Boolean,
         responseNeeded: Boolean,
         offset: Int,
-        value: ByteArray?
+        value: ByteArray?,
     ) {
         Log.d(
             tagForLog,
-            "onDescriptorWriteRequest: $device, $requestId, $descriptor, $preparedWrite, $responseNeeded, $offset, ${value.toHumanReadable()}"
+            "onDescriptorWriteRequest: $device, $requestId, $descriptor, $preparedWrite, $responseNeeded, $offset, ${value.toHumanReadable()}",
         )
 
         super.onDescriptorWriteRequest(
@@ -104,14 +104,14 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
             preparedWrite,
             responseNeeded,
             offset,
-            value
+            value,
         )
     }
 
     override fun onExecuteWrite(
         device: BluetoothDevice?,
         requestId: Int,
-        execute: Boolean
+        execute: Boolean,
     ) {
         Log.d(tagForLog, "onExecuteWrite: $device, $requestId, $execute")
 
@@ -120,14 +120,17 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
 
     override fun onNotificationSent(
         device: BluetoothDevice?,
-        status: Int
+        status: Int,
     ) {
         Log.d(tagForLog, "onNotificationSent: $device, $status")
 
         super.onNotificationSent(device, status)
     }
 
-    override fun onMtuChanged(device: BluetoothDevice?, mtu: Int) {
+    override fun onMtuChanged(
+        device: BluetoothDevice?,
+        mtu: Int,
+    ) {
         Log.d(tagForLog, "onMtuChanged: $device, $mtu")
 
         super.onMtuChanged(device, mtu)
@@ -137,7 +140,7 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
         device: BluetoothDevice?,
         txPhy: Int,
         rxPhy: Int,
-        status: Int
+        status: Int,
     ) {
         Log.d(tagForLog, "onPhyUpdate: $device, $txPhy, $rxPhy, $status")
 
@@ -148,7 +151,7 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
         device: BluetoothDevice?,
         txPhy: Int,
         rxPhy: Int,
-        status: Int
+        status: Int,
     ) {
         Log.d(tagForLog, "onPhyRead $device, $txPhy, $rxPhy, $status")
 
@@ -157,10 +160,11 @@ open class PrintingBluetoothGattServerCallback() : BluetoothGattServerCallback()
 }
 
 private val Int.human: String
-    get() = when (this) {
-        STATE_DISCONNECTED -> "STATE_DISCONNECTED"
-        STATE_CONNECTING -> "STATE_CONNECTING"
-        STATE_CONNECTED -> "STATE_CONNECTED"
-        STATE_DISCONNECTING -> "STATE_DISCONNECTING"
-        else -> "unknown"
-    }
+    get() =
+        when (this) {
+            STATE_DISCONNECTED -> "STATE_DISCONNECTED"
+            STATE_CONNECTING -> "STATE_CONNECTING"
+            STATE_CONNECTED -> "STATE_CONNECTED"
+            STATE_DISCONNECTING -> "STATE_DISCONNECTING"
+            else -> "unknown"
+        }

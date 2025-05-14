@@ -56,20 +56,24 @@ class StartUpTest {
                     val webView = view as WebView
 
                     activityRule.scenario.onActivity {
-                        val injectionSnippet = JSCodeSnippet.fromRawResource(
-                            context = webView.context,
-                            resource = "injectjs.js",
-                            replacements = listOf(
-                                "JAVASCRIPT_BRIDGE" to JAVASCRIPT_BRIDGE_NAME,
-                                "JAVASCRIPT_VISUALIZE_INJECTION" to "${BuildConfig.VISUALIZE_INJECTION}"
+                        val injectionSnippet =
+                            JSCodeSnippet.fromRawResource(
+                                context = webView.context,
+                                resource = "injectjs.js",
+                                replacements =
+                                    listOf(
+                                        "JAVASCRIPT_BRIDGE" to JAVASCRIPT_BRIDGE_NAME,
+                                        "JAVASCRIPT_VISUALIZE_INJECTION" to "${BuildConfig.VISUALIZE_INJECTION}",
+                                    ),
                             )
-                        )
 
                         // add syntax exception handler
                         webView.evaluateJavascript("err = '';window.onerror = (e) => err += String(e);") {}
 
                         // execute snipped injection, and catch errors
-                        webView.evaluateJavascript("try {\n${injectionSnippet.code}\n} catch (e) {\nerr += 'Exception: ' + JSON.stringify(e);\n}") {}
+                        webView.evaluateJavascript(
+                            "try {\n${injectionSnippet.code}\n} catch (e) {\nerr += 'Exception: ' + JSON.stringify(e);\n}",
+                        ) {}
 
                         webView.evaluateJavascript("err") {
                             error = it
@@ -101,11 +105,12 @@ class StartUpTest {
                         val webView = view as WebView
                         activityRule.scenario.onActivity {
                             webView.evaluateJavascript("navigator.credentials") {
-                                webNavigator = if (it == "null") {
-                                    null
-                                } else {
-                                    it
-                                }
+                                webNavigator =
+                                    if (it == "null") {
+                                        null
+                                    } else {
+                                        it
+                                    }
                                 latch.countDown()
                             }
                         }

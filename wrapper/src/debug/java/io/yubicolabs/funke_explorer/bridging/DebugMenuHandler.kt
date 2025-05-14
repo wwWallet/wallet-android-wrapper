@@ -28,43 +28,42 @@ class DebugMenuHandler(
     val context: Context,
     val showUrlRow: (Boolean) -> Unit,
 ) {
-    private var maxSeparatorsCount = 1;
-    private val actions: Map<String, (JSExecutor) -> Unit> = mapOf(
-        SHOW_URL_ROW to { js -> showUrlRow(true) },
-        HIDE_URL_ROW to { js -> showUrlRow(false) },
-
-        LIST_SEPARATOR * maxSeparatorsCount++ to {},
-
-        OVERRIDE_HINT_WITH_SECURITY_KEY to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['security-key'])") {} },
-        OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['client-device'])") {} },
-        OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['emulator'])") {} },
-        DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints([])") {} },
-
-        LIST_SEPARATOR * maxSeparatorsCount++ to {},
-
-        SEND_FEEDBACK to { js ->
-            js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
-                val jsonArray = JSONArray(logsJson)
-                val logs = jsonArray.toList().map { "$it" }
-                val body = createIssueBody(logs, Int.MAX_VALUE)
-                val title = "Wwwwallet wrapper issue"
+    private var maxSeparatorsCount = 1
+    private val actions: Map<String, (JSExecutor) -> Unit> =
+        mapOf(
+            SHOW_URL_ROW to { js -> showUrlRow(true) },
+            HIDE_URL_ROW to { js -> showUrlRow(false) },
+            LIST_SEPARATOR * maxSeparatorsCount++ to {},
+            OVERRIDE_HINT_WITH_SECURITY_KEY to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['security-key'])") {} },
+            OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['client-device'])") {} },
+            OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['emulator'])") {} },
+            DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints([])") {} },
+            LIST_SEPARATOR * maxSeparatorsCount++ to {},
+            SEND_FEEDBACK to { js ->
+                js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
+                    val jsonArray = JSONArray(logsJson)
+                    val logs = jsonArray.toList().map { "$it" }
+                    val body = createIssueBody(logs, Int.MAX_VALUE)
+                    val title = "Wwwwallet wrapper issue"
 
 //              TODO: Once Github is public, move over from email to github issue creation.
 //              val uri =
 //                  "https://github.com/wwWallet/wwwallet-android-wrapper/issues/new?title=${title}&body=${body.urlSafe()}".toUri()
 //              context.startActivity(Intent(Intent.ACTION_VIEW, uri))
 
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    setType("text/html")
-                    putExtra(Intent.EXTRA_EMAIL, arrayOf("mario.bodemann@yubico.com"))
-                    putExtra(Intent.EXTRA_SUBJECT, title)
-                    putExtra(Intent.EXTRA_HTML_TEXT, body)
-                    putExtra(Intent.EXTRA_TEXT, body) // fallback
-                }
+                    val intent =
+                        Intent(Intent.ACTION_SEND).apply {
+                            setType("text/html")
+                            putExtra(Intent.EXTRA_EMAIL, arrayOf("mario.bodemann@yubico.com"))
+                            putExtra(Intent.EXTRA_SUBJECT, title)
+                            putExtra(Intent.EXTRA_HTML_TEXT, body)
+                            putExtra(Intent.EXTRA_TEXT, body) // fallback
+                        }
 
-                context.startActivity(intent)            }
-        },
-    )
+                    context.startActivity(intent)
+                }
+            },
+        )
 
     fun onMenuOpened(jsExecutor: JSExecutor) {
         jsExecutor("console.log('Developer encountered.')") {}
@@ -74,7 +73,7 @@ class DebugMenuHandler(
         AlertDialog.Builder(context, theme)
             .setTitle("Debug Menu")
             .setItems(
-                items
+                items,
             ) { dialog, which ->
                 val key = items[which]
                 if (key in actions) {
@@ -96,26 +95,29 @@ class DebugMenuHandler(
     }
 }
 
-private operator fun String.times(times: Int): String =
-    (0 until times).joinToString(separator = "") { this }
+private operator fun String.times(times: Int): String = (0 until times).joinToString(separator = "") { this }
 
-private fun createIssueBody(logs: List<String>, maxLogLineCount: Int = 50): String {
+private fun createIssueBody(
+    logs: List<String>,
+    maxLogLineCount: Int = 50,
+): String {
     val digits = log10(logs.size.toFloat()).nextUp().toInt() + 1
 
     // truncate log to max lines (otherwise request to github becomes to big)
-    val truncatedLogs = if (logs.size > maxLogLineCount) {
-        logs.takeLast(maxLogLineCount)
-    } else {
-        logs
-    }
+    val truncatedLogs =
+        if (logs.size > maxLogLineCount) {
+            logs.takeLast(maxLogLineCount)
+        } else {
+            logs
+        }
 
     val truncated = truncatedLogs.size < logs.size
-    val truncatedOffset = if (truncated) {
-        logs.size - truncatedLogs.size
-    } else {
-        0
-    }
-
+    val truncatedOffset =
+        if (truncated) {
+            logs.size - truncatedLogs.size
+        } else {
+            0
+        }
 
     return """Hey wwwallet team,
                            
