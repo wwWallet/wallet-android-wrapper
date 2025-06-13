@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.webkit.ValueCallback
 import androidx.core.net.toUri
-import androidx.core.text.htmlEncode
-import androidx.core.text.parseAsHtml
 import io.yubicolabs.wwwwallet.BuildConfig
 import io.yubicolabs.wwwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 import io.yubicolabs.wwwwallet.json.toList
@@ -54,8 +52,8 @@ class DebugMenuHandler(
                             JSONArray(logsJson)
                                 .toList()
                                 .map { "$it" },
-                            Int.MAX_VALUE
-                        )
+                            Int.MAX_VALUE,
+                        ),
                     )
                 }
             },
@@ -66,8 +64,8 @@ class DebugMenuHandler(
                             JSONArray(logsJson)
                                 .toList()
                                 .map { "$it" },
-                            Int.MAX_VALUE
-                        )
+                            Int.MAX_VALUE,
+                        ),
                     )
                 }
             },
@@ -104,7 +102,7 @@ class DebugMenuHandler(
 
     private fun githubFeedback(
         body: String,
-        title: String = "wwWallet Android Wrapper Issue"
+        title: String = "wwWallet Android Wrapper Issue",
     ) {
         val uri =
             "https://github.com/wwWallet/wallet-android-wrapper/issues/new?title=${
@@ -118,7 +116,7 @@ class DebugMenuHandler(
 
     private fun emailFeedback(
         body: String,
-        title: String = "wwWallet Android Wrapper Issue"
+        title: String = "wwWallet Android Wrapper Issue",
     ) {
         val intent =
             Intent(Intent.ACTION_SEND).apply {
