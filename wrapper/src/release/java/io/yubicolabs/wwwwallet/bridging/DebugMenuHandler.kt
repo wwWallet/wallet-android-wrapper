@@ -8,7 +8,7 @@ typealias JSExecutor = (code: String, callback: ValueCallback<String>) -> Unit
 class DebugMenuHandler(
     val context: Context,
     val showUrlRow: (Boolean) -> Unit,
-    val browseTo: (Boolean) -> Unit,
+    val browseTo: (String) -> Unit,
 ) {
     fun onMenuOpened(jsExecutor: JSExecutor) {
         jsExecutor(
