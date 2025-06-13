@@ -103,6 +103,11 @@ class MainActivity : ComponentActivity() {
             owner = this,
         ) { vm.onBackPressed() }
 
+        when (intent.scheme) {
+            "https", "openid4vp", "haip" -> vm.parseIntent(intent)
+            else -> Log.e(tagForLog, "Cannot handle ${intent.scheme}.")
+        }
+
         super.onCreate(savedInstanceState)
 
         setContent {
@@ -156,11 +161,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-        }
-
-        when (intent.scheme) {
-            "https", "openid4vp" -> vm.parseIntent(intent)
-            else -> Log.e(tagForLog, "Cannot handle ${intent.scheme}.")
         }
     }
 }

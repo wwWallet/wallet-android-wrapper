@@ -27,13 +27,15 @@ class MainViewModel : ViewModel() {
         _url.update {
             when {
                 url.isBlank() or
-                    url.startsWith("http://") or
-                    url.startsWith("https://")
-                -> url
+                        url.startsWith("http://") or
+                        url.startsWith("https://") ->
+                    url
 
-                url.startsWith("openid4vp://") -> {
+                url.startsWith("openid4vp://") ->
                     url.replace("openid4vp://", BuildConfig.BASE_URL)
-                }
+
+                url.startsWith("haip://") ->
+                    url.replace("haip://", BuildConfig.BASE_URL)
 
                 else -> "https://$url"
             }
@@ -49,9 +51,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun parseIntent(intent: Intent) {
-        Dispatchers.IO.dispatch(EmptyCoroutineContext) {
-            val uri: Uri = intent.data!!
-            _url.update { uri.toString() }
-        }
+        val uri: Uri = intent.data!!
+        setUrl(uri.toString())
     }
 }
