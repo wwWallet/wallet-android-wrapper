@@ -4,12 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlin.coroutines.EmptyCoroutineContext
 
 @SuppressLint("StaticFieldLeak")
 class MainViewModel : ViewModel() {
@@ -27,8 +25,8 @@ class MainViewModel : ViewModel() {
         _url.update {
             when {
                 url.isBlank() or
-                        url.startsWith("http://") or
-                        url.startsWith("https://") ->
+                    url.startsWith("http://") or
+                    url.startsWith("https://") ->
                     url
 
                 url.startsWith("openid4vp://") ->

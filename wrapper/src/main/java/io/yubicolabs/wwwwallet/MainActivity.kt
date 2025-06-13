@@ -15,7 +15,6 @@ import android.webkit.WebSettings.LOAD_NO_CACHE
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -89,7 +88,7 @@ class MainActivity : ComponentActivity() {
                 DebugMenuHandler(
                     context = this,
                     showUrlRow = { vm.showUrlRow(it) },
-                    browseTo = { vm.setUrl(it) }
+                    browseTo = { vm.setUrl(it) },
                 )
             } else {
                 null

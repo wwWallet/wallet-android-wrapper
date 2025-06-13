@@ -38,18 +38,15 @@ class DebugMenuHandler(
             SHOW_URL_ROW to { js -> showUrlRow(true) },
             HIDE_URL_ROW to { js -> showUrlRow(false) },
             LIST_SEPARATOR * maxSeparatorsCount++ to {},
-
             USE_DEMO_BASE_URL to { js -> browseTo("https://demo.wwwallet.org/") },
             USE_FUNKE_BASE_URL to { js -> browseTo("https://funke.wwwallet.org/") },
             USE_QA_BASE_URL to { js -> browseTo("https://qa.wwwallet.org/") },
             LIST_SEPARATOR * maxSeparatorsCount++ to {},
-
             OVERRIDE_HINT_WITH_SECURITY_KEY to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['security-key'])") {} },
             OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['client-device'])") {} },
             OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['emulator'])") {} },
             DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints([])") {} },
             LIST_SEPARATOR * maxSeparatorsCount++ to {},
-
             SEND_FEEDBACK to { js ->
                 js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
                     val jsonArray = JSONArray(logsJson)
