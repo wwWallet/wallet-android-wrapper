@@ -87,6 +87,7 @@ class MainActivity : ComponentActivity() {
                 DebugMenuHandler(
                     context = this,
                     showUrlRow = { vm.showUrlRow(it) },
+                    browseTo = { vm.setUrl(it) }
                 )
             } else {
                 null
