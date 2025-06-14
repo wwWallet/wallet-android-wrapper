@@ -17,6 +17,7 @@ private const val HIDE_URL_ROW = "Hide URL Row"
 private const val USE_DEMO_BASE_URL = "Use Demo (default)"
 private const val USE_FUNKE_BASE_URL = "Use Funke"
 private const val USE_QA_BASE_URL = "Use QA"
+
 private const val SEND_FEEDBACK_EMAIL = "Give Feedback via email"
 private const val SEND_FEEDBACK_GITHUB = "Give Feedback via GitHub issues"
 private const val SEND_FEEDBACK = "Give Feedback (Version ${BuildConfig.VERSION_NAME})"
@@ -33,12 +34,17 @@ typealias JSExecutor = (code: String, callback: ValueCallback<String>) -> Unit
 class DebugMenuHandler(
     val context: Context,
     val showUrlRow: (Boolean) -> Unit,
+    val browseTo: (String) -> Unit,
 ) {
     private var maxSeparatorsCount = 1
     private val actions: Map<String, (JSExecutor) -> Unit> =
         mapOf(
             SHOW_URL_ROW to { js -> showUrlRow(true) },
             HIDE_URL_ROW to { js -> showUrlRow(false) },
+            LIST_SEPARATOR * maxSeparatorsCount++ to {},
+            USE_DEMO_BASE_URL to { js -> browseTo("https://demo.wwwallet.org/") },
+            USE_FUNKE_BASE_URL to { js -> browseTo("https://funke.wwwallet.org/") },
+            USE_QA_BASE_URL to { js -> browseTo("https://qa.wwwallet.org/") },
             LIST_SEPARATOR * maxSeparatorsCount++ to {},
             OVERRIDE_HINT_WITH_SECURITY_KEY to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['security-key'])") {} },
             OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['client-device'])") {} },

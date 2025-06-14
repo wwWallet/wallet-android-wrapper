@@ -17,6 +17,7 @@ import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
@@ -87,6 +88,7 @@ class MainActivity : ComponentActivity() {
                 DebugMenuHandler(
                     context = this,
                     showUrlRow = { vm.showUrlRow(it) },
+                    browseTo = { vm.setUrl(it) },
                 )
             } else {
                 null
@@ -102,12 +104,19 @@ class MainActivity : ComponentActivity() {
             owner = this,
         ) { vm.onBackPressed() }
 
+        when (intent.scheme) {
+            "https", "openid4vp", "haip" -> vm.parseIntent(intent)
+            else -> Log.e(tagForLog, "Cannot handle ${intent.scheme}.")
+        }
+
         super.onCreate(savedInstanceState)
 
         setContent {
             MaterialTheme(
                 if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
             ) {
+                enableEdgeToEdge()
+
                 val urlRow by vm.showUrlRow.collectAsState()
 
                 Scaffold(
@@ -155,11 +164,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-        }
-
-        when (intent.scheme) {
-            "https", "openid4vp" -> vm.parseIntent(intent)
-            else -> Log.e(tagForLog, "Cannot handle ${intent.scheme}.")
         }
     }
 }
