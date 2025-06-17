@@ -52,13 +52,13 @@ jobs:
       - name: Test
         run: ./gradlew assemble check
 
-      - name: Assemble all APKs
-        run: ./gradlew createReleaseNotes
-
       - name: Fingerprints
         run: ./gradlew checkFingerPrints
 
-      - name: Create GitHub release (with notes)
+      - name: Create release notes
+        run: ./gradlew createReleaseNotes
+
+      - name: Create GitHub release
         id: create_release
         uses: comnoco/create-release-action@v2
         env:
