@@ -20,7 +20,6 @@ private const val USE_QA_BASE_URL = "Use QA"
 
 private const val SEND_FEEDBACK_EMAIL = "Give Feedback via email"
 private const val SEND_FEEDBACK_GITHUB = "Give Feedback via GitHub issues"
-private const val SEND_FEEDBACK = "Give Feedback (Version ${BuildConfig.VERSION_NAME})"
 
 private const val OVERRIDE_HINT_WITH_SECURITY_KEY = "Set hints to ['security-key']"
 private const val OVERRIDE_HINT_WITH_CLIENT_DEVICE = "Set hints to ['client-device']"
