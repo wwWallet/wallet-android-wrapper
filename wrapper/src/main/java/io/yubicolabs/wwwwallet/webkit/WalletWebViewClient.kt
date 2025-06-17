@@ -11,21 +11,21 @@ import androidx.webkit.WebViewClientCompat
 import io.yubicolabs.wwwwallet.BuildConfig
 import io.yubicolabs.wwwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 
-private val URL_IGNORE_LIST: Array<String> = arrayOf(
-    "github",
-    "demo-issuer",
-    "demo-verifier",
-    "qa-issuer",
-    "qa-verifier",
-)
+private val URL_IGNORE_LIST: Array<String> =
+    arrayOf(
+        "github",
+        "demo-issuer",
+        "demo-verifier",
+        "qa-issuer",
+        "qa-verifier",
+    )
 
 class WalletWebViewClient(
     private val activity: Activity,
 ) : WebViewClientCompat() {
-
     override fun shouldOverrideUrlLoading(
         view: WebView,
-        request: WebResourceRequest
+        request: WebResourceRequest,
     ): Boolean {
         if (
             URL_IGNORE_LIST.any {
