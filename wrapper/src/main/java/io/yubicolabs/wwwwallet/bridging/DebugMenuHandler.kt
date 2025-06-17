@@ -136,6 +136,8 @@ class DebugMenuHandler(
     }
 }
 
+private operator fun String.times(times: Int): String = (0 until times).joinToString(separator = "") { this }
+
 private fun createIssueBody(
     logs: List<String>,
     maxLogLineCount: Int = 50,
