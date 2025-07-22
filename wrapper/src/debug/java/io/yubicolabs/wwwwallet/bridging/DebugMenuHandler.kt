@@ -56,7 +56,7 @@ class DebugMenuHandler(
                 js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
                     showLogs(
                         collectLogs(logsJson),
-                        copyToClipboard
+                        copyToClipboard,
                     )
                 }
             },
@@ -111,7 +111,10 @@ class DebugMenuHandler(
             .show()
     }
 
-    fun showLogs(logs: List<String>, copyToClipboard: (String) -> Unit) {
+    fun showLogs(
+        logs: List<String>,
+        copyToClipboard: (String) -> Unit,
+    ) {
         val theme = io.yubicolabs.wwwwallet.R.style.Theme_Wwwallet_Dialog
 
         AlertDialog.Builder(context, theme)
@@ -120,10 +123,10 @@ class DebugMenuHandler(
                 logs.map { log ->
                     log.replace(
                         Regex("[0-9]+: (.*)"),
-                        "<tt>$1</tt>"
+                        "<tt>$1</tt>",
                     ).parseAsHtml()
                 }
-                    .toTypedArray()
+                    .toTypedArray(),
             ) { dialog, which ->
                 copyToClipboard(logs[which])
                 dialog.dismiss()
@@ -171,14 +174,13 @@ class DebugMenuHandler(
             JSONArray(logsJson)
                 .toList()
                 .map { "$it" } +
-                    YOLOLogger.messages()
+                YOLOLogger.messages()
 
         return combinedLogs.sorted()
     }
 }
 
-private operator fun String.times(times: Int): String =
-    (0 until times).joinToString(separator = "") { this }
+private operator fun String.times(times: Int): String = (0 until times).joinToString(separator = "") { this }
 
 private fun createIssueBody(
     logs: List<String>,
