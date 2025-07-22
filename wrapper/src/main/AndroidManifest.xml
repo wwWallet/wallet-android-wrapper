@@ -130,7 +130,7 @@
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
-            android:label="Wwwallet Hardware / Software Secure Storage"
+            android:label="wwWallet Secure Storage"
             android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
             tools:targetApi="34">
             <intent-filter>
