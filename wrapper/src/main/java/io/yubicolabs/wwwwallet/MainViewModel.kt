@@ -1,8 +1,11 @@
 package io.yubicolabs.wwwwallet
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,5 +54,18 @@ class MainViewModel : ViewModel() {
     fun parseIntent(intent: Intent) {
         val uri: Uri = intent.data!!
         setUrl(uri.toString())
+    }
+
+    fun copyToClipboard(text: String) {
+        if (activity == null) {
+            Log.e(tagForLog, "NULL activity, closing.")
+            return
+        }
+
+        val manager =
+            activity!!.applicationContext.getSystemService(ClipboardManager::class.java)
+
+        val clip = ClipData.newPlainText("wwWallet log", text)
+        manager.setPrimaryClip(clip)
     }
 }

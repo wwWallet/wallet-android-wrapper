@@ -5,19 +5,20 @@ import android.content.Context
 import android.content.Intent
 import android.webkit.ValueCallback
 import androidx.core.net.toUri
+import androidx.core.text.parseAsHtml
 import io.yubicolabs.wwwwallet.BuildConfig
 import io.yubicolabs.wwwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 import io.yubicolabs.wwwwallet.json.toList
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import org.json.JSONArray
-import kotlin.math.log10
-import kotlin.math.nextUp
 
 private const val SHOW_URL_ROW = "Show URL Row"
 private const val HIDE_URL_ROW = "Hide URL Row"
-private const val USE_DEMO_BASE_URL = "Use Demo (default)"
-private const val USE_FUNKE_BASE_URL = "Use Funke"
-private const val USE_QA_BASE_URL = "Use QA"
+private const val USE_DEMO_BASE_URL = "Use Demo Base URL (default)"
+private const val USE_FUNKE_BASE_URL = "Use Funke Base URL"
+private const val USE_QA_BASE_URL = "Use QA Base URL"
 
+private const val SHOW_LOGS = "Show Application Logs"
 private const val SEND_FEEDBACK_EMAIL = "Give Feedback via email"
 private const val SEND_FEEDBACK_GITHUB = "Give Feedback via GitHub issues"
 
@@ -34,6 +35,7 @@ class DebugMenuHandler(
     val context: Context,
     val showUrlRow: (Boolean) -> Unit,
     val browseTo: (String) -> Unit,
+    val copyToClipboard: (String) -> Unit,
 ) {
     private var maxSeparatorsCount = 1
     private val actions: Map<String, (JSExecutor) -> Unit> =
@@ -50,13 +52,19 @@ class DebugMenuHandler(
             OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['emulator'])") {} },
             DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints([])") {} },
             LIST_SEPARATOR * maxSeparatorsCount++ to {},
+            SHOW_LOGS to { js ->
+                js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
+                    showLogs(
+                        collectLogs(logsJson),
+                        copyToClipboard
+                    )
+                }
+            },
             SEND_FEEDBACK_EMAIL to { js ->
                 js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
                     emailFeedback(
                         createIssueBody(
-                            JSONArray(logsJson)
-                                .toList()
-                                .map { "$it" },
+                            collectLogs(logsJson),
                             Int.MAX_VALUE,
                         ),
                     )
@@ -66,9 +74,7 @@ class DebugMenuHandler(
                 js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
                     githubFeedback(
                         createIssueBody(
-                            JSONArray(logsJson)
-                                .toList()
-                                .map { "$it" },
+                            collectLogs(logsJson),
                             Int.MAX_VALUE,
                         ),
                     )
@@ -105,6 +111,31 @@ class DebugMenuHandler(
             .show()
     }
 
+    fun showLogs(logs: List<String>, copyToClipboard: (String) -> Unit) {
+        val theme = io.yubicolabs.wwwwallet.R.style.Theme_Wwwallet_Dialog
+
+        AlertDialog.Builder(context, theme)
+            .setTitle("Log")
+            .setItems(
+                logs.map { log ->
+                    log.replace(
+                        Regex("[0-9]+: (.*)"),
+                        "<tt>$1</tt>"
+                    ).parseAsHtml()
+                }
+                    .toTypedArray()
+            ) { dialog, which ->
+                copyToClipboard(logs[which])
+                dialog.dismiss()
+            }
+            .setPositiveButton(android.R.string.ok) { dialog, which ->
+                dialog.dismiss()
+            }.setNeutralButton("📋") { dialog, which ->
+                copyToClipboard(logs.joinToString("\n"))
+            }
+            .show()
+    }
+
     private fun githubFeedback(
         body: String,
         title: String = "wwWallet Android Wrapper Issue",
@@ -134,16 +165,25 @@ class DebugMenuHandler(
 
         context.startActivity(intent)
     }
+
+    private fun collectLogs(logsJson: String): List<String> {
+        val combinedLogs =
+            JSONArray(logsJson)
+                .toList()
+                .map { "$it" } +
+                    YOLOLogger.messages()
+
+        return combinedLogs.sorted()
+    }
 }
 
-private operator fun String.times(times: Int): String = (0 until times).joinToString(separator = "") { this }
+private operator fun String.times(times: Int): String =
+    (0 until times).joinToString(separator = "") { this }
 
 private fun createIssueBody(
     logs: List<String>,
     maxLogLineCount: Int = 50,
 ): String {
-    val digits = log10(logs.size.toFloat()).nextUp().toInt() + 1
-
     // truncate log to max lines (otherwise request to github becomes to big)
     val truncatedLogs =
         if (logs.size > maxLogLineCount) {
@@ -153,12 +193,6 @@ private fun createIssueBody(
         }
 
     val truncated = truncatedLogs.size < logs.size
-    val truncatedOffset =
-        if (truncated) {
-            logs.size - truncatedLogs.size
-        } else {
-            0
-        }
 
     return """Hey wwWallet Android Wrapper team,
                            
@@ -185,9 +219,7 @@ private fun createIssueBody(
 
     ```
     ${if (truncated) "… truncated …\n" else ""} ${
-        truncatedLogs.mapIndexed { index, line ->
-            "${"%0${digits}d".format(index + truncatedOffset + 1)}: $line"
-        }.joinToString("\n")
+        truncatedLogs.joinToString("\n")
     }
     ```
     </details> 
