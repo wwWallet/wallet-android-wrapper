@@ -8,7 +8,7 @@ import io.yubicolabs.wwwwallet.BuildConfig
 import io.yubicolabs.wwwwallet.bluetooth.BleClientHandler
 import io.yubicolabs.wwwwallet.bluetooth.BleServerHandler
 import io.yubicolabs.wwwwallet.bluetooth.ServiceCharacteristic
-import io.yubicolabs.wwwwallet.credentials.NavigatorCredentialsContainer
+import io.yubicolabs.wwwwallet.credentials.Container
 import io.yubicolabs.wwwwallet.json.setNested
 import io.yubicolabs.wwwwallet.json.toList
 import io.yubicolabs.wwwwallet.tagForLog
@@ -22,9 +22,9 @@ import kotlin.coroutines.EmptyCoroutineContext
 class WalletJsBridge(
     private val webView: WebView,
     private val dispatcher: CoroutineDispatcher,
-    private val securityKeyCredentialsContainer: NavigatorCredentialsContainer,
-    private val clientDeviceCredentialsContainer: NavigatorCredentialsContainer,
-    private val emulatedCredentialsContainer: NavigatorCredentialsContainer,
+    private val securityKeyCredentialsContainer: Container,
+    private val clientDeviceCredentialsContainer: Container,
+    private val emulatedCredentialsContainer: Container,
     private val bleClientHandler: BleClientHandler,
     private val bleServerHandler: BleServerHandler,
     private val debugMenuHandler: DebugMenuHandler?,
@@ -33,14 +33,14 @@ class WalletJsBridge(
         const val JAVASCRIPT_BRIDGE_NAME = "nativeWrapper"
     }
 
-    private fun credentialsContainerByOption(mappedOptions: JSONObject): NavigatorCredentialsContainer =
+    private fun credentialsContainerByOption(mappedOptions: JSONObject): Container =
         try {
             val publicKey = mappedOptions.getJSONObject("publicKey")
             // throws JSONException if not present
             val jsonHints = publicKey.getJSONArray("hints")
             val hints = jsonHints.toList().mapNotNull { it as? String }
 
-            var selectedContainer: NavigatorCredentialsContainer? = null
+            var selectedContainer: Container? = null
             for (hint in hints) {
                 selectedContainer =
                     when (hint) {

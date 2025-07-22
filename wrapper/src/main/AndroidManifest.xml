@@ -37,9 +37,9 @@
 
         <activity
             android:name=".MainActivity"
+            android:configChanges="keyboard|keyboardHidden"
             android:exported="true"
-            android:theme="@style/Theme.Wwwallet"
-            android:configChanges="keyboard|keyboardHidden">
+            android:theme="@style/Theme.Wwwallet">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -57,9 +57,9 @@ import io.yubicolabs.wwwwallet.bluetooth.BleServerHandler
 import io.yubicolabs.wwwwallet.bridging.DebugMenuHandler
 import io.yubicolabs.wwwwallet.bridging.WalletJsBridge
 import io.yubicolabs.wwwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
-import io.yubicolabs.wwwwallet.credentials.NavigatorCredentialsContainerAndroid
-import io.yubicolabs.wwwwallet.credentials.NavigatorCredentialsContainerYubico
-import io.yubicolabs.wwwwallet.credentials.SoftwareCredentialsContainer
+import io.yubicolabs.wwwwallet.credentials.AndroidContainer
+import io.yubicolabs.wwwwallet.credentials.ContainerYubico
+import io.yubicolabs.wwwwallet.credentials.SoftwareContainer
 import io.yubicolabs.wwwwallet.webkit.WalletWebChromeClient
 import io.yubicolabs.wwwwallet.webkit.WalletWebViewClient
 import kotlinx.coroutines.Dispatchers
@@ -79,9 +79,9 @@ class MainActivity : ComponentActivity() {
         WalletJsBridge(
             webView,
             Dispatchers.Main,
-            NavigatorCredentialsContainerYubico(activity = this),
-            NavigatorCredentialsContainerAndroid(activity = this),
-            SoftwareCredentialsContainer(),
+            ContainerYubico(activity = this),
+            AndroidContainer(context = this),
+            SoftwareContainer(),
             BleClientHandler(activity = this),
             BleServerHandler(activity = this),
             if (BuildConfig.DEBUG) {
