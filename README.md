@@ -1,6 +1,6 @@
 [![Android Build and Publish](https://github.com/wwWallet/wwwallet-android-wrapper/actions/workflows/release.yml/badge.svg)](https://github.com/wwWallet/wwwallet-android-wrapper/actions/workflows/release.yml)
 
-Wwwallet Android
+wwWallet Android
 ================
 
 An Android native application wrapping `https://demo.wwwallet.org`. It is intended as a research project for the
