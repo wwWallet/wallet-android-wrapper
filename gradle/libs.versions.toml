@@ -18,6 +18,8 @@ coroutines = "1.10.1"
 androidxtest = "1.6.1"
 softauth = "0.1.2"
 ktlint = "12.2.0"
+gps-ic = "16.0.0-alpha06"
+registryDigitalcredentialsMdoc = "1.0.0-alpha01"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -46,6 +48,10 @@ test-json = { group = "org.json", name = "json", version.ref = "test-json" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxtest" }
 androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "androidxtest" }
 softauth = { group = "io.github.adessose", name = "softauthn", version.ref = "softauth" }
+playservices-identity-credentials = { group = "com.google.android.gms", name = "play-services-identity-credentials", version.ref = "gps-ic" }
+androidx-registry-digitalcredentials-mdoc = { group = "androidx.credentials.registry", name = "registry-digitalcredentials-mdoc", version.ref = "registryDigitalcredentialsMdoc" }
+androidx-registry-provider = { group = "androidx.credentials.registry", name = "registry-provider", version.ref = "registryDigitalcredentialsMdoc" }
+androidx-registry-provider-play-services = { group = "androidx.credentials.registry", name = "registry-provider-play-services", version.ref = "registryDigitalcredentialsMdoc" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
