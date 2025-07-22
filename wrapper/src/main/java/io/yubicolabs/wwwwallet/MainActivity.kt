@@ -89,6 +89,7 @@ class MainActivity : ComponentActivity() {
                     context = this,
                     showUrlRow = { vm.showUrlRow(it) },
                     browseTo = { vm.setUrl(it) },
+                    copyToClipboard = { vm.copyToClipboard(it) },
                 )
             } else {
                 null
@@ -106,6 +107,7 @@ class MainActivity : ComponentActivity() {
 
         when (intent.scheme) {
             "https", "openid4vp", "haip" -> vm.parseIntent(intent)
+            null -> Unit
             else -> Log.e(tagForLog, "Cannot handle ${intent.scheme}.")
         }
 
