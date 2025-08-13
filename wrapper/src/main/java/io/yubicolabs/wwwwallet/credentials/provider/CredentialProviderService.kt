@@ -172,7 +172,8 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
 
     private fun answerRequest(
         callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>,
-        request: BeginGetCredentialRequest, // TODO: USE THIS IN THE ACTIONS FOR NAMES AND THINGSSS
+        // TODO: USE THIS IN THE ACTIONS FOR NAMES AND THINGSSS
+        request: BeginGetCredentialRequest,
         credentials: JSONArray,
     ) {
         val requestJson =
@@ -215,9 +216,10 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
     }
 
     private fun createPendingIntentForSecurityCreation(credentialsJson: String): PendingIntent =
+        // TODO MAKE SENSE OF THAT ID
         PendingIntent.getActivity(
             baseContext,
-            0x411, // TODO MAKE SENSE OF THAT
+            0x411,
             Intent(baseContext, PasskeyProviderActivity::class.java).also {
                 it.setPackage(PACKAGE_NAME)
                 it.putExtra(EXTRA_KEY_REQUEST_ID, 0x411)
@@ -270,6 +272,7 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
         bundle.putString(BUNDLE_KEY_REQUEST_JSON, requestJson)
         bundle.putByteArray(BUNDLE_KEY_CLIENT_DATA_HASH, clientDataHash)
 
+        // TODO: ADD FANCY ICON!!?
         return PublicKeyCredentialEntry(
             username = username,
             context = applicationContext,
@@ -287,7 +290,7 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
                 Icon.createWithResource(
                     applicationContext,
                     R.mipmap.ic_launcher,
-                ), // TODO: ADD FANCY ICON!!?
+                ),
         )
     }
 }
