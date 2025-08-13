@@ -15,7 +15,6 @@ import androidx.credentials.exceptions.CreateCredentialException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
 import androidx.credentials.exceptions.GetCredentialUnknownException
-import androidx.credentials.provider.Action
 import androidx.credentials.provider.AuthenticationAction
 import androidx.credentials.provider.BeginCreateCredentialRequest
 import androidx.credentials.provider.BeginCreateCredentialResponse
@@ -26,6 +25,8 @@ import androidx.credentials.provider.CreateEntry
 import androidx.credentials.provider.CredentialEntry
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import androidx.credentials.provider.PublicKeyCredentialEntry
+import androidx.credentials.provider.RemoteEntry
+import com.yubico.webauthn.data.ByteArray
 import io.yubicolabs.wwwwallet.R
 import io.yubicolabs.wwwwallet.credentials.SoftwareContainer
 import io.yubicolabs.wwwwallet.json.getNested
@@ -41,117 +42,130 @@ private const val CREATE_BASE_REQUEST_ID: Int = BASE_ID + 0
 const val CREATE_SECURITY_KEY_REQUEST_ID: Int = CREATE_BASE_REQUEST_ID + 0
 const val CREATE_CLIENT_DEVICE_REQUEST_ID: Int = CREATE_BASE_REQUEST_ID + 1
 
+const val GET_CREDENTIAL_REQUEST_ID: Int = BASE_ID + 10
+
 const val BUNDLE_KEY_REQUEST: String = "androidx.credentials.BUNDLE_KEY_REQUEST_JSON"
 const val HINT_SECURITY_KEY: String = "security-key"
 const val HINT_CLIENT_DEVICE: String = "client-device"
 
-const val EXTRA_KEY_ACCOUNT_ID = "KEY_ACCOUNT_ID"
+const val EXTRA_KEY_USER_ID = "KEY_ACCOUNT_ID"
 const val EXTRA_KEY_REQUEST_ID = "KEY_REQUEST_ID"
+const val EXTRA_KEY_CREDENTIALS_JSON = "KEY_CREDENTIAL_JSON"
+const val EXTRA_KEY_CREDENTIAL_ID = "KEY_CREDENTIAL_ID"
+const val EXTRA_KEY_REQUEST_OPTIONS = "KEY_REQUEST_OPTIONS"
+
+const val BUNDLE_KEY_REQUEST_JSON = "androidx.credentials.BUNDLE_KEY_REQUEST_JSON"
+const val BUNDLE_KEY_CLIENT_DATA_HASH = "androidx.credentials.BUNDLE_KEY_CLIENT_DATA_HASH"
 
 @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 open class CredentialProviderService() : AndroidCredentialProviderService() {
     override fun onBeginCreateCredentialRequest(
         request: BeginCreateCredentialRequest,
         cancellationSignal: CancellationSignal,
-        callback: OutcomeReceiver<BeginCreateCredentialResponse, CreateCredentialException>
+        callback: OutcomeReceiver<BeginCreateCredentialResponse, CreateCredentialException>,
     ) {
         val queryJson =
             request.candidateQueryData.getString(BUNDLE_KEY_REQUEST)
                 ?: ""
         val query = JSONObject(queryJson)
-        val accountName = query.getNested("user.name") as? CharSequence ?: ""
-        val accountId = query.getNested("user.id") as? String ?: ""
+        val userId = query.getNested("user.id") as? String ?: ""
 
         callback.onResult(
             BeginCreateCredentialResponse(
-                listOf(
-                    createCreateEntry(
-                        accountName = baseContext.getString(R.string.credential_provider_create_external_device_description),
-                        accountId = accountId,
-                        requestId = CREATE_SECURITY_KEY_REQUEST_ID,
+                createEntries =
+                    listOf(
+                        createCreateEntry(
+                            accountName = baseContext.getString(R.string.credential_provider_create_android_description),
+                            userId = userId,
+                            requestId = CREATE_CLIENT_DEVICE_REQUEST_ID,
+                        ),
                     ),
-                    createCreateEntry(
-                        accountName = baseContext.getString(R.string.credential_provider_create_android_description),
-                        accountId = accountId,
-                        requestId = CREATE_CLIENT_DEVICE_REQUEST_ID,
-                    )
-                ),
-            )
+                remoteEntry =
+                    RemoteEntry(
+                        pendingIntent =
+                            createSecurityKeyCreationIntent(
+                                queryJson,
+                            ),
+                    ),
+            ),
         )
     }
 
     private fun createCreateEntry(
         accountName: String,
         requestId: Int,
-        accountId: String,
-    ): CreateEntry = CreateEntry(
-        accountName = accountName,
-        pendingIntent = PendingIntent.getActivity(
+        userId: String,
+    ): CreateEntry =
+        CreateEntry(
+            accountName = accountName,
+            pendingIntent =
+                PendingIntent.getActivity(
+                    baseContext,
+                    requestId,
+                    Intent(baseContext, PasskeyProviderActivity::class.java).also {
+                        it.setPackage(PACKAGE_NAME)
+                        it.putExtra(EXTRA_KEY_USER_ID, userId)
+                        it.putExtra(EXTRA_KEY_REQUEST_ID, requestId)
+                    },
+                    PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                ),
+        )
+
+    private fun createSecurityKeyCreationIntent(optionsJson: String): PendingIntent =
+        PendingIntent.getActivity(
             baseContext,
-            requestId,
+            CREATE_SECURITY_KEY_REQUEST_ID,
             Intent(baseContext, PasskeyProviderActivity::class.java).also {
                 it.setPackage(PACKAGE_NAME)
-                it.putExtra(EXTRA_KEY_ACCOUNT_ID, accountId)
-                it.putExtra(EXTRA_KEY_REQUEST_ID, requestId)
+                it.putExtra(EXTRA_KEY_REQUEST_OPTIONS, optionsJson)
             },
-            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_MUTABLE,
         )
-    )
 
     override fun onBeginGetCredentialRequest(
         request: BeginGetCredentialRequest,
         cancellationSignal: CancellationSignal,
-        callback: OutcomeReceiver<BeginGetCredentialResponse, androidx.credentials.exceptions.GetCredentialException>
+        callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>,
     ) {
         try {
             // TODO: Use all options, not just the first.
             val optionsJson =
                 request.beginGetCredentialOptions.first().candidateQueryData.getString(
-                    BUNDLE_KEY_REQUEST
+                    BUNDLE_KEY_REQUEST,
                 ) ?: "null"
 
             val options = JSONObject(optionsJson)
-            if (options != JSONObject.NULL)
-                BuildInContainer().get(
-                    options,
-                    successCallback = { buildInResponses ->
-//                        ContainerYubico(activity).get(
-//                            options,
-//                            successCallback = { yubicoResponses ->
+            if (options != JSONObject.NULL) {
+                SoftwareContainer(applicationContext).get(
+                    JSONObject(mapOf("publicKey" to options)),
+                    successCallback = { buildInResponse ->
+                        val response =
+                            if (buildInResponse.has("credentials")) {
+                                buildInResponse.getJSONArray("credentials")
+                            } else {
+                                JSONArray(listOf(buildInResponse))
+                            }
+
                         answerRequest(
                             callback,
                             request,
-                            JSONArray(
-                                // todo convert into credentials here???
-                                listOf(
-                                    buildInResponses,
-//                                            yubicoResponses
-                                )
-                            )
+                            response,
                         )
-//                            },
-//                            failureCallback = {
-//                                Log.e(tagForLog, "Failure in requesting credentials.")
-//
-//                                callback.onError(
-//                                    GetCredentialProviderConfigurationException("No credentials found for that configuration.")
-//                                )
-//                            }
-//                        )
                     },
                     failureCallback = { th ->
-                        Log.e(tagForLog, "Failure in requesting credentials.")
+                        Log.e(tagForLog, "Failure in requesting credentials.", th)
 
                         callback.onError(
-                            GetCredentialProviderConfigurationException("No credentials found for that configuration.")
+                            GetCredentialProviderConfigurationException("No credentials found for that configuration."),
                         )
                     },
                 )
+            }
         } catch (th: Throwable) {
             Log.e(tagForLog, "Couldn't get credentials.", th)
 
             callback.onError(
-                GetCredentialUnknownException("Couldn't retrieve credentials.")
+                GetCredentialUnknownException("Couldn't retrieve credentials."),
             )
         }
     }
@@ -159,99 +173,121 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
     private fun answerRequest(
         callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>,
         request: BeginGetCredentialRequest, // TODO: USE THIS IN THE ACTIONS FOR NAMES AND THINGSSS
-        credentials: JSONArray
+        credentials: JSONArray,
     ) {
+        val requestJson =
+            request
+                .beginGetCredentialOptions
+                .first()
+                .candidateQueryData
+                .getString(BUNDLE_KEY_REQUEST)
+
+        val requestId = request.beginGetCredentialOptions.first().id
+
+        // / TODO: MAP TO ACTUAL CREDENTIALS!!
+        val credentialEntries =
+            credentials.toList().mapNotNull {
+                (it as? Map<*, *>)?.toCredentialEntry(requestJson ?: "", requestId)
+            }
+
+        Log.i(
+            tagForLog,
+            "Available user named credentials:\n  ${
+                credentialEntries.joinToString("\n  ") { cred ->
+                    (cred as? PublicKeyCredentialEntry)?.username ?: "<no public key credential: ${cred.javaClass.simpleName}."
+                }
+            }",
+        )
+
         callback.onResult(
-            /*result = */ BeginGetCredentialResponse(
-                credentialEntries = credentials.toList().mapNotNull {
-                    /// TODO: MAP TO ACTUAL CREDENTIALS!!
-                    (it as? Map<*, *>)?.toCredentialEntries()
-                }.flatten(),
-                actions = listOf(
-                    Action(
-                        title = "TITILE 1",
-                        subtitle = "subtitle",
-                        pendingIntent = createActionIntent()
-                    )
-                ),
-                authenticationActions = listOf(
-                    AuthenticationAction(
-                        title = "AUTHACT!",
-                        pendingIntent = createAuthActionIntent(),
-                    )
-                )
-            )
+            // result =
+            BeginGetCredentialResponse(
+                credentialEntries = credentialEntries,
+                authenticationActions =
+                    listOf(
+                        AuthenticationAction(
+                            title = "Get From Security Key",
+                            pendingIntent = createPendingIntentForSecurityCreation(credentials.toString()),
+                        ),
+                    ),
+            ),
         )
     }
 
-    private fun createActionIntent(): PendingIntent = PendingIntent.getActivity(
-        baseContext,
-        0xC0FFE, // TODO MAKE SENSE OF THAT
-        Intent(baseContext, PasskeyProviderActivity::class.java).also {
-            it.setPackage(PACKAGE_NAME)
-            it.putExtra("YOLO", "SOMETHING< FIX ME< DO STUFF")
-            it.putExtra(EXTRA_KEY_REQUEST_ID, 0xC0FFE)
-        },
-        PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    )
+    private fun createPendingIntentForSecurityCreation(credentialsJson: String): PendingIntent =
+        PendingIntent.getActivity(
+            baseContext,
+            0x411, // TODO MAKE SENSE OF THAT
+            Intent(baseContext, PasskeyProviderActivity::class.java).also {
+                it.setPackage(PACKAGE_NAME)
+                it.putExtra(EXTRA_KEY_REQUEST_ID, 0x411)
+                it.putExtra(EXTRA_KEY_CREDENTIALS_JSON, credentialsJson)
+            },
+            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
 
-    private fun createAuthActionIntent(): PendingIntent = PendingIntent.getActivity(
-        baseContext,
-        0xBEEF, // TODO MAKE SENSE OF THAT
-        Intent(baseContext, PasskeyProviderActivity::class.java).also {
-            it.setPackage(PACKAGE_NAME)
-            it.putExtra("YOLO-BUT_AUTH", "SOMETHING< FIX ME< DO STUFF")
-            it.putExtra(EXTRA_KEY_REQUEST_ID, 0xBEEF)
-        },
-        PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    )
-
-    private fun createCredentialPendingIntent(): PendingIntent = PendingIntent.getActivity(
-        baseContext,
-        0xC0DE, // TODO MAKE SENSE OF THAT
-        Intent(baseContext, PasskeyProviderActivity::class.java).also {
-            it.setPackage(PACKAGE_NAME)
-            it.putExtra("YOLO-BUT_CREDENTIAL", "SOMETHING< FIX ME< DO STUFF")
-            it.putExtra(EXTRA_KEY_REQUEST_ID, 0xC0DE)
-        },
-        PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    )
+    private fun createGetCredentialsPendingIntent(
+        id: String,
+        credentialJson: String,
+    ): PendingIntent =
+        PendingIntent.getActivity(
+            baseContext,
+            GET_CREDENTIAL_REQUEST_ID,
+            Intent(baseContext, PasskeyProviderActivity::class.java).also {
+                it.setPackage(PACKAGE_NAME)
+                it.putExtra(EXTRA_KEY_REQUEST_ID, GET_CREDENTIAL_REQUEST_ID)
+                it.putExtra(EXTRA_KEY_CREDENTIALS_JSON, credentialJson)
+                it.putExtra(EXTRA_KEY_CREDENTIAL_ID, id)
+            },
+            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
 
     override fun onClearCredentialStateRequest(
         request: ProviderClearCredentialStateRequest,
         cancellationSignal: CancellationSignal,
-        callback: OutcomeReceiver<Void?, ClearCredentialException>
+        callback: OutcomeReceiver<Void?, ClearCredentialException>,
     ) {
         Log.i("TODO", "Not yet implemented")
     }
 
     // TODO THINK ABOUT MUTIPLE SELECTION RETURNS
-    private fun Map<*, *>.toCredentialEntries(): List<CredentialEntry> {
+    private fun Map<*, *>.toCredentialEntry(
+        requestJson: String,
+        requestId: String,
+    ): CredentialEntry {
         // TODO convert all responses to entries
-        val bundle = Bundle()
-        val username = "username"
-        val displayname = "displayname"
-        val id = "1234"
-        val clientDataHash = byteArrayOf()
 
-        return listOf(
-            PublicKeyCredentialEntry(
-                username = username,
-                context = applicationContext,
-                pendingIntent = createCredentialPendingIntent(),
-                beginGetPublicKeyCredentialOption = BeginGetPublicKeyCredentialOption(
+        val id = get("id") as String
+
+        val username = get("userName") as String
+        val displayname = get("userDisplayName") as String
+
+        val clientDataHash =
+            ByteArray.fromBase64Url(getNested("response.clientDataJSON") as String)
+                .bytes
+
+        val bundle = Bundle()
+        bundle.putString(BUNDLE_KEY_REQUEST_JSON, requestJson)
+        bundle.putByteArray(BUNDLE_KEY_CLIENT_DATA_HASH, clientDataHash)
+
+        return PublicKeyCredentialEntry(
+            username = username,
+            context = applicationContext,
+            pendingIntent = createGetCredentialsPendingIntent(id, JSONObject(this).toString()),
+            beginGetPublicKeyCredentialOption =
+                BeginGetPublicKeyCredentialOption(
                     candidateQueryData = bundle,
-                    id = id,
-                    requestJson = "",
+                    id = requestId,
+                    requestJson = requestJson,
                     clientDataHash = clientDataHash,
                 ),
-                displayName = displayname,
-                isAutoSelectAllowed = false,
-                icon = Icon.createWithResource(
+            displayName = displayname,
+            isAutoSelectAllowed = false,
+            icon =
+                Icon.createWithResource(
                     applicationContext,
-                    R.mipmap.ic_launcher
-                ) // TODO: ADD FANCY ICON!!?
-            )
+                    R.mipmap.ic_launcher,
+                ), // TODO: ADD FANCY ICON!!?
         )
     }
 }

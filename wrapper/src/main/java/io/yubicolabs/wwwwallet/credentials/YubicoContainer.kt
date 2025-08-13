@@ -506,7 +506,7 @@ private val JSONObject.rp: JSONObject?
 private val JSONObject.id: String?
     get() = getOrNull("id")
 
-private fun getClientOptions(
+fun getClientOptions(
     type: String,
     challenge: String,
     origin: String,
