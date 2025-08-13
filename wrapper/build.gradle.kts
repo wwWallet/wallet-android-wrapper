@@ -32,6 +32,13 @@ android {
             storePassword = env("WWWALLET_ANDROID_STORE_PASSWORD")
             storeFile = fileFromEnv(project, "WWWALLET_ANDROID_STORE_B64", "wwwallet.keystore")
         }
+
+        create("release") {
+            keyAlias = env("WWWALLET_ANDROID_RELEASE_KEY_ALIAS")
+            keyPassword = env("WWWALLET_ANDROID_KEY_PASSWORD")
+            storePassword = env("WWWALLET_ANDROID_STORE_PASSWORD")
+            storeFile = fileFromEnv(project, "WWWALLET_ANDROID_STORE_B64", "wwwallet.keystore")
+        }
     }
 
     buildTypes {
@@ -49,6 +56,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+
+            signingConfig = signingConfigs.getByName("release")
         }
 
         debug {

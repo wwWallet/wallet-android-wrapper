@@ -2,8 +2,6 @@ package io.yubicolabs.wwwwallet.webkit
 
 import android.app.Activity
 import android.content.Intent
-import android.net.http.SslError
-import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.widget.Toast
@@ -50,14 +48,5 @@ class WalletWebViewClient(
         super.onPageFinished(view, url)
 
         view.evaluateJavascript("$JAVASCRIPT_BRIDGE_NAME.inject()") {}
-    }
-
-    override fun onReceivedSslError(
-        view: WebView,
-        handler: SslErrorHandler,
-        error: SslError,
-    ) {
-        view.evaluateJavascript("console.log('SSL Error: \"$error\"');") {}
-        handler.proceed()
     }
 }
