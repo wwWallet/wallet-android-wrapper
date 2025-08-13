@@ -110,14 +110,14 @@ dependencies {
     implementation(libs.yubikit.android)
     implementation(libs.yubikit.fido)
     implementation(libs.logback)
+    implementation(libs.androidx.datastore.preferences)
 
     // digital credentials api
     implementation(libs.playservices.identity.credentials)
     implementation(libs.androidx.registry.provider)
     implementation(libs.androidx.registry.provider.play.services)
     implementation(libs.androidx.registry.digitalcredentials.mdoc)
-
-    debugImplementation(libs.softauth)
+    implementation(libs.softauth)
 
     testImplementation(libs.junit)
     testImplementation(libs.test.json)

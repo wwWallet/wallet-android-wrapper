@@ -16,10 +16,11 @@ logback = "3.0.0"
 test-json = "20231013"
 coroutines = "1.10.1"
 androidxtest = "1.6.1"
-softauth = "0.1.2"
+softauth = "fix~rp-origin-SNAPSHOT"
 ktlint = "12.2.0"
 gps-ic = "16.0.0-alpha06"
 registryDigitalcredentialsMdoc = "1.0.0-alpha01"
+datastore = "1.1.7"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -47,11 +48,12 @@ logback = { group = "com.github.tony19", name = "logback-android", version.ref =
 test-json = { group = "org.json", name = "json", version.ref = "test-json" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxtest" }
 androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "androidxtest" }
-softauth = { group = "io.github.adessose", name = "softauthn", version.ref = "softauth" }
+softauth = { group = "com.github.yubicolabs", name = "softauthn", version.ref = "softauth" }
 playservices-identity-credentials = { group = "com.google.android.gms", name = "play-services-identity-credentials", version.ref = "gps-ic" }
 androidx-registry-digitalcredentials-mdoc = { group = "androidx.credentials.registry", name = "registry-digitalcredentials-mdoc", version.ref = "registryDigitalcredentialsMdoc" }
 androidx-registry-provider = { group = "androidx.credentials.registry", name = "registry-provider", version.ref = "registryDigitalcredentialsMdoc" }
 androidx-registry-provider-play-services = { group = "androidx.credentials.registry", name = "registry-provider-play-services", version.ref = "registryDigitalcredentialsMdoc" }
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
