@@ -116,6 +116,21 @@ class MainActivity : ComponentActivity() {
             else -> YOLOLogger.e(tagForLog, "Cannot handle ${intent.scheme}.")
         }
 
+        when (val shortcut = intent.identifier) {
+            "shortcut_open_funke",
+            "shortcut_open_demo",
+            "shortcut_open_qa",
+            -> {
+                val endpoint = shortcut.split("_").last()
+                lifecycleScope.launch {
+                    vm.setBaseUrl("https://$endpoint.wwwallet.org")
+                    vm.browseToUrl(vm.getBaseUrl())
+                }
+            }
+
+            else -> {}
+        }
+
         super.onCreate(savedInstanceState)
 
         setContent {
