@@ -181,7 +181,7 @@ class DebugMenuHandler(
         val intent =
             Intent(Intent.ACTION_SEND).apply {
                 setType("text/html")
-                putExtra(Intent.EXTRA_EMAIL, arrayOf("mario.bodemann@yubico.com"))
+                putExtra(Intent.EXTRA_EMAIL, arrayOf("googledeveloper@siros.org"))
                 putExtra(Intent.EXTRA_SUBJECT, title)
                 putExtra(Intent.EXTRA_HTML_TEXT, body)
                 putExtra(Intent.EXTRA_TEXT, body) // fallback
