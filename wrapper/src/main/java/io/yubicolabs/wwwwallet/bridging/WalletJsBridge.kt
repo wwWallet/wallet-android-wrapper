@@ -9,7 +9,6 @@ import io.yubicolabs.wwwwallet.bluetooth.BleClientHandler
 import io.yubicolabs.wwwwallet.bluetooth.BleServerHandler
 import io.yubicolabs.wwwwallet.bluetooth.ServiceCharacteristic
 import io.yubicolabs.wwwwallet.credentials.Container
-import io.yubicolabs.wwwwallet.json.setNested
 import io.yubicolabs.wwwwallet.json.toList
 import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
