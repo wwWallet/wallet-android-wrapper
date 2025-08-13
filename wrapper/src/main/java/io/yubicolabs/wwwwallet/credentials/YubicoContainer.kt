@@ -9,7 +9,6 @@ import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
 import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
-import android.util.Log
 import android.view.KeyEvent
 import android.widget.EditText
 import android.widget.TextView
@@ -35,6 +34,7 @@ import io.yubicolabs.wwwwallet.credentials.Operation.CreateOperation
 import io.yubicolabs.wwwwallet.credentials.Operation.GetOperation
 import io.yubicolabs.wwwwallet.json.getOrNull
 import io.yubicolabs.wwwwallet.json.toMap
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 import kotlinx.coroutines.Dispatchers
 import org.json.JSONObject
@@ -86,7 +86,7 @@ class ContainerYubico(
                 nfcListener,
             )
         } catch (e: NfcNotAvailable) {
-            Log.i(tagForLog, "No NFC, ignoring.", e)
+            YOLOLogger.i(tagForLog, "No NFC, ignoring.", e)
         }
     }
 
@@ -97,7 +97,7 @@ class ContainerYubico(
         successCallback: (JSONObject) -> Unit,
         failureCallback: (Throwable) -> Unit,
     ) {
-        Log.i(tagForLog, "yubico create implementation called.")
+        YOLOLogger.i(tagForLog, "yubico create implementation called.")
 
         startDiscoveries()
 
@@ -114,7 +114,7 @@ class ContainerYubico(
         successCallback: (JSONObject) -> Unit,
         failureCallback: (Throwable) -> Unit,
     ) {
-        Log.i(tagForLog, "yubico get implementation called.")
+        YOLOLogger.i(tagForLog, "yubico get implementation called.")
 
         startDiscoveries()
 
@@ -167,7 +167,7 @@ class ContainerYubico(
             }
         } catch (e: Throwable) {
             // 👀 - WHy? TODO
-            Log.e(tagForLog, "Something", e)
+            YOLOLogger.e(tagForLog, "Something", e)
         }
     }
 
@@ -190,7 +190,7 @@ class ContainerYubico(
                     pin,
                 )
             } else {
-                Log.e(tagForLog, "Couldn't create session.", result.actualError)
+                YOLOLogger.e(tagForLog, "Couldn't create session.", result.actualError)
                 operation.failure(result.actualError)
             }
         }
@@ -231,13 +231,13 @@ class ContainerYubico(
                     state,
                 )
 
-            Log.i(tagForLog, "Done, created $result.")
+            YOLOLogger.i(tagForLog, "Done, created $result.")
             operation.success(JSONObject(result.toMap()))
         } catch (ctap: CtapException) {
-            Log.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
+            YOLOLogger.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
             operation.failure(ctap)
         } catch (th: Throwable) {
-            Log.e(tagForLog, "Unexpected error: '${th.message}'.", th)
+            YOLOLogger.e(tagForLog, "Unexpected error: '${th.message}'.", th)
             operation.failure(th)
         } finally {
             // TODO: Think about cleanup
@@ -259,7 +259,7 @@ class ContainerYubico(
                     pin,
                 )
             } else {
-                Log.e(tagForLog, "Couldn't get session.", result.actualError)
+                YOLOLogger.e(tagForLog, "Couldn't get session.", result.actualError)
                 operation.failure(result.actualError)
             }
         }
@@ -297,16 +297,16 @@ class ContainerYubico(
                     enterprise,
                 )
 
-            Log.i(tagForLog, "Done, got $result.")
+            YOLOLogger.i(tagForLog, "Done, got $result.")
             operation.success(JSONObject(result.toMap()))
         } catch (ctap: CtapException) {
-            Log.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
+            YOLOLogger.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
             operation.failure(ctap)
         } catch (multiple: MultipleAssertionsAvailable) {
-            Log.i(tagForLog, "Found several assertions. User selection needed.")
+            YOLOLogger.i(tagForLog, "Found several assertions. User selection needed.")
             requestSelection(multiple, kitOptions, operation)
         } catch (th: Throwable) {
-            Log.e(tagForLog, "Unexpected error: '${th.message}'.", th)
+            YOLOLogger.e(tagForLog, "Unexpected error: '${th.message}'.", th)
             operation.failure(th)
         } finally {
             // TODO: Think about cleanup
@@ -358,7 +358,7 @@ class ContainerYubico(
                         which: Int,
                     ) {
                         val credential = available.select(which)
-                        Log.i(tagForLog, "credential selected: $credential")
+                        YOLOLogger.i(tagForLog, "credential selected: $credential")
                         dialog?.dismiss()
 
                         success(credential)
@@ -369,7 +369,7 @@ class ContainerYubico(
                 .setTitle("Select one")
                 .setItems(items, listener)
                 .setNegativeButton(android.R.string.cancel) { dialog, which ->
-                    Log.i(tagForLog, "No user selected.")
+                    YOLOLogger.i(tagForLog, "No user selected.")
                     dialog.dismiss()
 
                     failure()
@@ -394,12 +394,12 @@ class ContainerYubico(
                     .setTitle("Pin Required")
                     .setView(pinEdit)
                     .setPositiveButton(android.R.string.ok) { dialog, which ->
-                        Log.i(tagForLog, "PIN entered.")
+                        YOLOLogger.i(tagForLog, "PIN entered.")
                         dialog.dismiss()
                         callback(pinEdit.text.toString())
                     }
                     .setNegativeButton(android.R.string.cancel) { dialog, which ->
-                        Log.i(tagForLog, "PIN entry cancelled.")
+                        YOLOLogger.i(tagForLog, "PIN entry cancelled.")
                         dialog.dismiss()
                         callback(null)
                     }.show()

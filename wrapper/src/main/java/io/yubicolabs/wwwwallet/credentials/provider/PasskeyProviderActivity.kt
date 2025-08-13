@@ -2,7 +2,6 @@ package io.yubicolabs.wwwwallet.credentials.provider
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -37,6 +36,7 @@ import io.yubicolabs.wwwwallet.credentials.Container
 import io.yubicolabs.wwwwallet.credentials.ContainerYubico
 import io.yubicolabs.wwwwallet.credentials.SoftwareContainer
 import io.yubicolabs.wwwwallet.json.getNested
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 import org.json.JSONArray
 import org.json.JSONObject
@@ -60,7 +60,7 @@ class PasskeyProviderActivity : ComponentActivity() {
                 val credentials = JSONArray(json)
                 val message = credentials.toString(4)
 
-                Log.i(tagForLog, message)
+                YOLOLogger.i(tagForLog, message)
                 Toast.makeText(
                     this,
                     "Found ${credentials.length()} credentials.",
@@ -79,7 +79,7 @@ class PasskeyProviderActivity : ComponentActivity() {
                     Toast.LENGTH_SHORT,
                 ).show()
 
-                Log.e(tagForLog, "Could not identify request id $requestId. Ignored.")
+                YOLOLogger.e(tagForLog, "Could not identify request id $requestId. Ignored.")
                 finish()
             }
         }
@@ -119,7 +119,7 @@ class PasskeyProviderActivity : ComponentActivity() {
     }
 
     private fun getRequest() {
-        Log.d(tagForLog, "Get credential request found.")
+        YOLOLogger.d(tagForLog, "Get credential request found.")
 
         // get credential selected
         val credentialJson = intent.getStringExtra(EXTRA_KEY_CREDENTIALS_JSON)
@@ -132,7 +132,7 @@ class PasskeyProviderActivity : ComponentActivity() {
                         .toString(),
                 )
 
-            Log.i(tagForLog, "Found this credential in bundle extras: $credentialJson.")
+            YOLOLogger.i(tagForLog, "Found this credential in bundle extras: $credentialJson.")
             val response = GetCredentialResponse(credential)
 
             val intent = Intent()

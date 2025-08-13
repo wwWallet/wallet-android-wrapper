@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.ViewGroup
 import android.webkit.ServiceWorkerClient
 import android.webkit.ServiceWorkerController
@@ -59,6 +58,7 @@ import io.yubicolabs.wwwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRID
 import io.yubicolabs.wwwwallet.credentials.AndroidContainer
 import io.yubicolabs.wwwwallet.credentials.ContainerYubico
 import io.yubicolabs.wwwwallet.credentials.SoftwareContainer
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.webkit.WalletWebChromeClient
 import io.yubicolabs.wwwwallet.webkit.WalletWebViewClient
 import kotlinx.coroutines.Dispatchers
@@ -113,7 +113,7 @@ class MainActivity : ComponentActivity() {
         when (intent.scheme) {
             "https", "openid4vp", "haip" -> vm.parseIntent(intent)
             null -> Unit
-            else -> Log.e(tagForLog, "Cannot handle ${intent.scheme}.")
+            else -> YOLOLogger.e(tagForLog, "Cannot handle ${intent.scheme}.")
         }
 
         super.onCreate(savedInstanceState)
@@ -316,7 +316,7 @@ private fun updateWebView(
                         it
                     }
 
-                Log.i(webView.tagForLog, "Reached $newUrl after back.")
+                YOLOLogger.i(webView.tagForLog, "Reached $newUrl after back.")
                 newUrlCallback("")
             }
         } else {

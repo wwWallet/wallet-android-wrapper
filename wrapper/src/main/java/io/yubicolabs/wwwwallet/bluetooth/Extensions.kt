@@ -8,7 +8,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothAdapter.ACTION_REQUEST_ENABLE
 import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_DENIED
-import android.util.Log
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 
 fun ByteArray?.toHumanReadable(): String =
     if (this == null) {
@@ -24,7 +24,7 @@ fun checkBluetoothPermissions(
     adapter: BluetoothAdapter?,
 ): Boolean {
     if (adapter == null) {
-        Log.e("BLEPERM", "No bluetooth device.")
+        YOLOLogger.e("BLEPERM", "No bluetooth device.")
         return false
     }
 

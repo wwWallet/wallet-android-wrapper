@@ -6,7 +6,7 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import android.util.Log
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 
 open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
@@ -16,7 +16,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         rxPhy: Int,
         status: Int,
     ) {
-        Log.d(tagForLog, "onPhyUpdate: $gatt, $txPhy, $rxPhy, $status")
+        YOLOLogger.d(tagForLog, "onPhyUpdate: $gatt, $txPhy, $rxPhy, $status")
         super.onPhyUpdate(gatt, txPhy, rxPhy, status)
     }
 
@@ -26,7 +26,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         rxPhy: Int,
         status: Int,
     ) {
-        Log.d(tagForLog, "onPhyRead: $gatt, $txPhy, $rxPhy, $status")
+        YOLOLogger.d(tagForLog, "onPhyRead: $gatt, $txPhy, $rxPhy, $status")
         super.onPhyRead(gatt, txPhy, rxPhy, status)
     }
 
@@ -35,7 +35,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         status: Int,
         newState: Int,
     ) {
-        Log.d(tagForLog, "onConnectionStateChange: $gatt, $status, $newState")
+        YOLOLogger.d(tagForLog, "onConnectionStateChange: $gatt, $status, $newState")
         super.onConnectionStateChange(gatt, status, newState)
     }
 
@@ -43,7 +43,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         gatt: BluetoothGatt?,
         status: Int,
     ) {
-        Log.d(tagForLog, "onServicesDiscovered: $gatt, $status")
+        YOLOLogger.d(tagForLog, "onServicesDiscovered: $gatt, $status")
         super.onServicesDiscovered(gatt, status)
     }
 
@@ -53,7 +53,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         characteristic: BluetoothGattCharacteristic?,
         status: Int,
     ) {
-        Log.d(tagForLog, "onCharacteristicRead: $gatt, $characteristic, $status")
+        YOLOLogger.d(tagForLog, "onCharacteristicRead: $gatt, $characteristic, $status")
         super.onCharacteristicRead(gatt, characteristic, status)
     }
 
@@ -63,7 +63,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         value: ByteArray,
         status: Int,
     ) {
-        Log.d(tagForLog, "onCharacteristicRead: $gatt, $characteristic, $value, $status")
+        YOLOLogger.d(tagForLog, "onCharacteristicRead: $gatt, $characteristic, $value, $status")
         super.onCharacteristicRead(gatt, characteristic, value, status)
     }
 
@@ -72,7 +72,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         characteristic: BluetoothGattCharacteristic?,
         status: Int,
     ) {
-        Log.d(
+        YOLOLogger.d(
             tagForLog,
             "onCharacteristicWrite: $gatt, $characteristic(${characteristic?.value}), $status",
         )
@@ -84,7 +84,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         gatt: BluetoothGatt?,
         characteristic: BluetoothGattCharacteristic?,
     ) {
-        Log.d(tagForLog, "onCharacteristicChanged: $gatt, $characteristic")
+        YOLOLogger.d(tagForLog, "onCharacteristicChanged: $gatt, $characteristic")
         super.onCharacteristicChanged(gatt, characteristic)
     }
 
@@ -93,7 +93,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray,
     ) {
-        Log.d(tagForLog, "onCharacteristicChanged: $gatt, $characteristic, $value")
+        YOLOLogger.d(tagForLog, "onCharacteristicChanged: $gatt, $characteristic, $value")
         super.onCharacteristicChanged(gatt, characteristic, value)
     }
 
@@ -103,7 +103,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         descriptor: BluetoothGattDescriptor?,
         status: Int,
     ) {
-        Log.d(tagForLog, "onDescriptorRead: $gatt, $descriptor, $status")
+        YOLOLogger.d(tagForLog, "onDescriptorRead: $gatt, $descriptor, $status")
         super.onDescriptorRead(gatt, descriptor, status)
     }
 
@@ -113,7 +113,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         status: Int,
         value: ByteArray,
     ) {
-        Log.d(tagForLog, "onDescriptorRead: $gatt, $descriptor, $status, $value")
+        YOLOLogger.d(tagForLog, "onDescriptorRead: $gatt, $descriptor, $status, $value")
         super.onDescriptorRead(gatt, descriptor, status, value)
     }
 
@@ -122,7 +122,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         descriptor: BluetoothGattDescriptor?,
         status: Int,
     ) {
-        Log.d(tagForLog, "onDescriptorWrite: $gatt, $descriptor, $status")
+        YOLOLogger.d(tagForLog, "onDescriptorWrite: $gatt, $descriptor, $status")
         super.onDescriptorWrite(gatt, descriptor, status)
     }
 
@@ -130,7 +130,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         gatt: BluetoothGatt?,
         status: Int,
     ) {
-        Log.d(tagForLog, "onReliableWriteCompleted: $gatt, $status")
+        YOLOLogger.d(tagForLog, "onReliableWriteCompleted: $gatt, $status")
         super.onReliableWriteCompleted(gatt, status)
     }
 
@@ -139,7 +139,7 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         rssi: Int,
         status: Int,
     ) {
-        Log.d(tagForLog, "onReadRemoteRssi: $gatt, $rssi, $status")
+        YOLOLogger.d(tagForLog, "onReadRemoteRssi: $gatt, $rssi, $status")
         super.onReadRemoteRssi(gatt, rssi, status)
     }
 
@@ -148,12 +148,12 @@ open class PrintingBluetoothGattCallback : BluetoothGattCallback() {
         mtu: Int,
         status: Int,
     ) {
-        Log.d(tagForLog, "onMtuChanged: $gatt, $mtu, $status")
+        YOLOLogger.d(tagForLog, "onMtuChanged: $gatt, $mtu, $status")
         super.onMtuChanged(gatt, mtu, status)
     }
 
     override fun onServiceChanged(gatt: BluetoothGatt) {
-        Log.d(tagForLog, "onServiceChanged: $gatt")
+        YOLOLogger.d(tagForLog, "onServiceChanged: $gatt")
         super.onServiceChanged(gatt)
     }
 }

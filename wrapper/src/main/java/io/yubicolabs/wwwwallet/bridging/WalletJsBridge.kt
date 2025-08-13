@@ -11,6 +11,7 @@ import io.yubicolabs.wwwwallet.bluetooth.ServiceCharacteristic
 import io.yubicolabs.wwwwallet.credentials.Container
 import io.yubicolabs.wwwwallet.json.setNested
 import io.yubicolabs.wwwwallet.json.toList
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +52,7 @@ class WalletJsBridge(
                         "emulator" -> emulatedCredentialsContainer
                         else -> {
                             // error case: unknown hint.
-                            Log.e(tagForLog, "Hint '$hint' not supported. Ignoring.")
+                            YOLOLogger.e(tagForLog, "Hint '$hint' not supported. Ignoring.")
                             null
                         }
                     }
@@ -77,7 +78,7 @@ class WalletJsBridge(
     @JavascriptInterface
     @SuppressLint("unused")
     fun inject() {
-        Log.i(
+        YOLOLogger.i(
             tagForLog,
             "Adding `${javaClass.simpleName}` as `$JAVASCRIPT_BRIDGE_NAME` to JS.",
         )
@@ -95,7 +96,7 @@ class WalletJsBridge(
                 )
 
             webView.evaluateJavascript(injectionSnippet.code) {
-                Log.i(it.tagForLog, it)
+                YOLOLogger.i(it.tagForLog, it)
             }
         }
     }
@@ -123,13 +124,13 @@ class WalletJsBridge(
     ) {
         val mappedOptions = JSONObject(options)
         mappedOptions.setNested("publicKey.attestation", "none")
-        Log.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.create($promiseUuid, ${mappedOptions.toString(2)}) called.")
+        YOLOLogger.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.create($promiseUuid, ${mappedOptions.toString(2)}) called.")
 
         credentialsContainerByOption(mappedOptions)
             .create(
                 options = mappedOptions,
                 failureCallback = { th ->
-                    Log.e(tagForLog, "Creation failed.", th)
+                    YOLOLogger.e(tagForLog, "Creation failed.", th)
 
                     dispatcher.dispatch(EmptyCoroutineContext) {
                         webView.evaluateJavascript(
@@ -142,7 +143,7 @@ class WalletJsBridge(
                     }
                 },
                 successCallback = { response ->
-                    Log.i(tagForLog, "Creation succeeded with $response.")
+                    YOLOLogger.i(tagForLog, "Creation succeeded with $response.")
 
                     dispatcher.dispatch(EmptyCoroutineContext) {
                         webView.evaluateJavascript(
@@ -163,14 +164,14 @@ class WalletJsBridge(
         promiseUuid: String,
         options: String,
     ) {
-        Log.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.get($promiseUuid, $options) called.")
+        YOLOLogger.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.get($promiseUuid, $options) called.")
 
         val mappedOptions = JSONObject(options)
         credentialsContainerByOption(mappedOptions)
             .get(
                 options = mappedOptions,
                 failureCallback = { th ->
-                    Log.e(tagForLog, "Get failed.", th)
+                    YOLOLogger.e(tagForLog, "Get failed.", th)
 
                     dispatcher.dispatch(EmptyCoroutineContext) {
                         webView.evaluateJavascript(
@@ -183,7 +184,7 @@ class WalletJsBridge(
                     }
                 },
                 successCallback = { response ->
-                    Log.i(tagForLog, "Get succeeded with $response.")
+                    YOLOLogger.i(tagForLog, "Get succeeded with $response.")
 
                     dispatcher.dispatch(EmptyCoroutineContext) {
                         webView.evaluateJavascript(

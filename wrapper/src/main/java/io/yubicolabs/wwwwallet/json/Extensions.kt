@@ -4,7 +4,7 @@ import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
 import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
-import android.util.Log
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 import org.json.JSONArray
 import org.json.JSONException
@@ -18,14 +18,14 @@ inline fun <reified T> JSONObject.getOrNull(name: String): T? =
         if (value is T) {
             value
         } else {
-            Log.w(
+            YOLOLogger.w(
                 tagForLog,
                 "Name $name of $this is not of type ${T::class.java.simpleName} but of ${value.javaClass.simpleName}.",
             )
             null
         }
     } catch (e: JSONException) {
-        Log.e(tagForLog, "Name $name not found in $this.", e)
+        YOLOLogger.e(tagForLog, "Name $name not found in $this.", e)
         null
     }
 
@@ -52,7 +52,7 @@ fun JSONObject.toMap(): Map<String, Any?> {
                                 if (maybeByte is Int) {
                                     maybeByte.toByte()
                                 } else {
-                                    Log.w(
+                                    YOLOLogger.w(
                                         tagForLog,
                                         "Index $index of name $key is not a byte but $maybeByte instead.",
                                     )

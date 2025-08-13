@@ -2,7 +2,6 @@ package io.yubicolabs.wwwwallet.webkit
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
 import android.webkit.JsResult
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
@@ -10,6 +9,7 @@ import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 
 private const val WEBKIT_VIDEO_PERMISSION = "android.webkit.resource.VIDEO_CAPTURE"
@@ -23,7 +23,7 @@ class WalletWebChromeClient(
         message: String?,
         result: JsResult?,
     ): Boolean {
-        Log.e("WEBVIEW", message ?: "<>")
+        YOLOLogger.e("WEBVIEW", message ?: "<>")
 
         return super.onJsAlert(view, url, message, result)
     }
@@ -33,7 +33,7 @@ class WalletWebChromeClient(
             if (resource == WEBKIT_VIDEO_PERMISSION) {
                 grantPermission(activity, request, resource)
             } else {
-                Log.e(tagForLog, "Permission request denied: $resource")
+                YOLOLogger.e(tagForLog, "Permission request denied: $resource")
             }
         }
     }

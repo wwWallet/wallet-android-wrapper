@@ -5,9 +5,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.storage.ProfileStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,7 +71,7 @@ class MainViewModel : ViewModel() {
                     else -> url
                 }
             } catch (uriException: URISyntaxException) {
-                Log.e(tagForLog, "URL ERROR, routing back to base url.", uriException)
+                YOLOLogger.e(tagForLog, "URL ERROR, routing back to base url.", uriException)
                 getBaseUrl()
             }
         }
@@ -94,7 +94,7 @@ class MainViewModel : ViewModel() {
 
     fun copyToClipboard(text: String) {
         if (activity == null) {
-            Log.e(tagForLog, "NULL activity, closing.")
+            YOLOLogger.e(tagForLog, "NULL activity, closing.")
             return
         } else {
             val manager =

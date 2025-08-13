@@ -1,7 +1,6 @@
 package io.yubicolabs.wwwwallet.credentials
 
 import android.content.Context
-import android.util.Log
 import com.yubico.webauthn.data.AuthenticatorAssertionResponse
 import com.yubico.webauthn.data.AuthenticatorAttestationResponse
 import com.yubico.webauthn.data.AuthenticatorTransport
@@ -18,6 +17,7 @@ import com.yubico.webauthn.data.UserIdentity
 import com.yubico.webauthn.data.UserVerificationRequirement
 import de.adesso.softauthn.authenticator.functional.exception.MutiplePublicKeysFoundException
 import io.yubicolabs.wwwwallet.json.toList
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.storage.CredentialStorage
 import io.yubicolabs.wwwwallet.tagForLog
 import kotlinx.coroutines.CoroutineScope
@@ -40,7 +40,7 @@ class SoftwareContainer(context: Context) : Container {
             try {
                 val publicKey = options.getJSONObject("publicKey")
                 if (publicKey.has("hints")) {
-                    Log.i(
+                    YOLOLogger.i(
                         tagForLog,
                         "Currently hints are not supported in software. Ignoring them.",
                     )
@@ -86,7 +86,7 @@ class SoftwareContainer(context: Context) : Container {
                     failureCallback(NoSuchElementException())
                 }
             } catch (e: MutiplePublicKeysFoundException) {
-                Log.e(tagForLog, "Multiple Credentials Found", e)
+                YOLOLogger.e(tagForLog, "Multiple Credentials Found", e)
 
                 val creds =
                     e.publicKeys.map { key ->

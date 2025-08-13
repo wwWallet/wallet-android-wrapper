@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
 import android.provider.ContactsContract.Directory.PACKAGE_NAME
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.CreateCredentialException
@@ -31,6 +30,7 @@ import io.yubicolabs.wwwwallet.R
 import io.yubicolabs.wwwwallet.credentials.SoftwareContainer
 import io.yubicolabs.wwwwallet.json.getNested
 import io.yubicolabs.wwwwallet.json.toList
+import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 import org.json.JSONArray
 import org.json.JSONObject
@@ -153,7 +153,7 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
                         )
                     },
                     failureCallback = { th ->
-                        Log.e(tagForLog, "Failure in requesting credentials.", th)
+                        YOLOLogger.e(tagForLog, "Failure in requesting credentials.", th)
 
                         callback.onError(
                             GetCredentialProviderConfigurationException("No credentials found for that configuration."),
@@ -162,7 +162,7 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
                 )
             }
         } catch (th: Throwable) {
-            Log.e(tagForLog, "Couldn't get credentials.", th)
+            YOLOLogger.e(tagForLog, "Couldn't get credentials.", th)
 
             callback.onError(
                 GetCredentialUnknownException("Couldn't retrieve credentials."),
@@ -191,7 +191,7 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
                 (it as? Map<*, *>)?.toCredentialEntry(requestJson ?: "", requestId)
             }
 
-        Log.i(
+        YOLOLogger.i(
             tagForLog,
             "Available user named credentials:\n  ${
                 credentialEntries.joinToString("\n  ") { cred ->
@@ -249,7 +249,7 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
         cancellationSignal: CancellationSignal,
         callback: OutcomeReceiver<Void?, ClearCredentialException>,
     ) {
-        Log.i("TODO", "Not yet implemented")
+        YOLOLogger.i("TODO", "Not yet implemented")
     }
 
     // TODO THINK ABOUT MUTIPLE SELECTION RETURNS
