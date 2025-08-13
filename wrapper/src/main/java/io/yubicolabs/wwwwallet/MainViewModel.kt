@@ -54,19 +54,25 @@ class MainViewModel : ViewModel() {
         _url.update { "" }
 
         _url.update {
-            when {
-                url.isBlank() or
-                        url.startsWith("http://") or
-                        url.startsWith("https://") ->
-                    url
+            try {
+                val uri = URI(url)
+                when (uri.scheme) {
+                    "https", "http" -> url
 
-                url.startsWith("openid4vp://") ->
-                    url.replace("openid4vp://", BuildConfig.BASE_URL)
+                    "openid4vp", "haip" ->
+                        URI(
+                            "https",
+                            URI(getBaseUrl()).host,
+                            "/cb",
+                            uri.query,
+                            uri.fragment,
+                        ).toASCIIString()
 
-                url.startsWith("haip://") ->
-                    url.replace("haip://", BuildConfig.BASE_URL)
-
-                else -> "https://$url"
+                    else -> url
+                }
+            } catch (uriException: URISyntaxException) {
+                Log.e(tagForLog, "URL ERROR, routing back to base url.", uriException)
+                getBaseUrl()
             }
         }
     }
