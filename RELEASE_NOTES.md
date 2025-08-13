@@ -1,3 +1,12 @@
+# 0.0.16
+
+* release version preparation
+ * playstore release and on github
+* rework external url handling (`openid4vp://`, `haip://`)
+* persist baseurl across sessions
+  * use app shortcuts (longpress on app icon)
+* add feature debug only passkey provider
+
 # 0.0.15
 
 * stability improvements
