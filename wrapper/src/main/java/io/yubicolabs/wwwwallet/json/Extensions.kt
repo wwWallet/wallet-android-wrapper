@@ -37,7 +37,7 @@ fun JSONObject.toMap(): Map<String, Any?> {
             is JSONObject -> {
                 val names = value.names()
                 if (value.names() == null || names?.length() == 0) {
-                    result[key] = ""
+                    result[key] = null
                 } else {
                     val bytesOrObject: Map<String, Any?> = value.toMap()
                     val keysAreIndexes =
@@ -88,14 +88,16 @@ fun JSONArray.toList(): List<Any?> =
         }
     }
 
-fun JSONObject.getNested(path: String): Any? =
+fun JSONObject.getNested(path: String): Any? = toMap().getNested(path)
+
+fun Map<*, *>.getNested(path: String): Any? =
     if ("." in path) {
         val all = path.split(".")
         val first = all.first()
 
-        if (has(first)) {
+        if (contains(first)) {
             val rest = all.drop(1).joinToString(separator = ".")
-            getJSONObject(first).getNested(rest)
+            (get(first) as? Map<*, *>)?.getNested(rest)
         } else {
             null
         }
