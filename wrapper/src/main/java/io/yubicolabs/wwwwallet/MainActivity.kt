@@ -41,9 +41,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -51,6 +49,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.lifecycleScope
 import ch.qos.logback.classic.android.BasicLogcatConfigurator
 import io.yubicolabs.wwwwallet.bluetooth.BleClientHandler
 import io.yubicolabs.wwwwallet.bluetooth.BleServerHandler
@@ -63,6 +62,7 @@ import io.yubicolabs.wwwwallet.credentials.SoftwareContainer
 import io.yubicolabs.wwwwallet.webkit.WalletWebChromeClient
 import io.yubicolabs.wwwwallet.webkit.WalletWebViewClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     init {
@@ -88,7 +88,12 @@ class MainActivity : ComponentActivity() {
                 DebugMenuHandler(
                     context = this,
                     showUrlRow = { vm.showUrlRow(it) },
-                    browseTo = { vm.setUrl(it) },
+                    browseTo = {
+                        lifecycleScope.launch {
+                            vm.setBaseUrl(it)
+                            vm.browseToUrl(it)
+                        }
+                    },
                     copyToClipboard = { vm.copyToClipboard(it) },
                 )
             } else {
@@ -120,6 +125,7 @@ class MainActivity : ComponentActivity() {
                 enableEdgeToEdge()
 
                 val urlRow by vm.showUrlRow.collectAsState()
+                val url by vm.url.collectAsState()
 
                 Scaffold(
                     topBar = {
@@ -130,9 +136,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 actions = {
                                     IconButton(onClick = {
-                                        // force update
-                                        vm.setUrl("")
-                                        vm.setUrl(BuildConfig.BASE_URL)
+                                        lifecycleScope.launch {
+                                            vm.browseToUrl(vm.getBaseUrl())
+                                        }
                                     }) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.baseline_refresh_24),
@@ -160,9 +166,12 @@ class MainActivity : ComponentActivity() {
                             webChromeClient = webChromeClient,
                             javascriptInterfaceCreator = javascriptInterfaceCreator,
                             javascriptInterfaceName = JAVASCRIPT_BRIDGE_NAME,
-                            vm.url.collectAsState().value ?: "",
-                            vm::setUrl,
-                        )
+                            url,
+                        ) { url ->
+                            lifecycleScope.launch {
+                                vm.browseToUrl(url)
+                            }
+                        }
                     }
                 }
             }
@@ -173,7 +182,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ColumnScope.UrlRow(vm: MainViewModel) {
     Row {
-        var tempUrl by remember { mutableStateOf(BuildConfig.BASE_URL) }
+        val scope = rememberCoroutineScope()
+        val tempUrl by vm.url.collectAsState()
         val keyboardController = LocalSoftwareKeyboardController.current
 
         TextField(
@@ -181,21 +191,23 @@ fun ColumnScope.UrlRow(vm: MainViewModel) {
             singleLine = true,
             label = { Text(text = "Enter URL") },
             value = tempUrl,
-            onValueChange = {
-                tempUrl = it
-            },
+            onValueChange = vm::updateUrl,
             keyboardOptions =
                 KeyboardOptions(
                     imeAction = ImeAction.Go,
                 ),
             keyboardActions =
                 KeyboardActions {
-                    vm.setUrl(tempUrl)
+                    scope.launch {
+                        vm.browseToUrl(tempUrl)
+                    }
                     keyboardController?.hide()
                 },
         )
 
-        IconButton(onClick = { vm.setUrl(tempUrl) }) {
+        IconButton(onClick = {
+            scope.launch { vm.browseToUrl(tempUrl) }
+        }) {
             Icon(
                 painter = painterResource(id = android.R.drawable.ic_menu_upload),
                 contentDescription = null,

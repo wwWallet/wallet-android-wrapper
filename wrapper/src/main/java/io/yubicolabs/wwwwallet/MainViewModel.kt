@@ -7,22 +7,50 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import io.yubicolabs.wwwwallet.storage.ProfileStorage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.net.URI
+import java.net.URISyntaxException
 
 @SuppressLint("StaticFieldLeak")
 class MainViewModel : ViewModel() {
+    lateinit var profileStorage: ProfileStorage
+
     var activity: MainActivity? = null
+        set(value) {
+            if (value != null) {
+                profileStorage = ProfileStorage(value)
 
-    private val _url: MutableStateFlow<String> = MutableStateFlow(BuildConfig.BASE_URL)
-    var url: StateFlow<String?> = _url.asStateFlow()
+                viewModelScope.launch {
+                    val baseurl = profileStorage.restore().baseUrl
 
-    private val _showUrlRow: MutableStateFlow<Boolean> = MutableStateFlow(BuildConfig.SHOW_URL_ROW)
+                    _url.update {
+                        baseurl
+                    }
+                }
+            }
+
+            field = value
+        }
+
+    private val _url: MutableStateFlow<String> = MutableStateFlow("")
+    var url: StateFlow<String> = _url.asStateFlow()
+
+    private val _showUrlRow: MutableStateFlow<Boolean> =
+        MutableStateFlow(BuildConfig.SHOW_URL_ROW)
     var showUrlRow: StateFlow<Boolean> = _showUrlRow.asStateFlow()
 
-    fun setUrl(url: String) {
+    fun updateUrl(url: String) {
+        _url.update { url }
+    }
+
+    suspend fun browseToUrl(url: String) {
         _url.update { "" }
 
         _url.update {
@@ -52,20 +80,28 @@ class MainViewModel : ViewModel() {
     }
 
     fun parseIntent(intent: Intent) {
-        val uri: Uri = intent.data!!
-        setUrl(uri.toString())
+        viewModelScope.launch(Dispatchers.IO) {
+            val uri: Uri = intent.data!!
+            browseToUrl(uri.toString())
+        }
     }
 
     fun copyToClipboard(text: String) {
         if (activity == null) {
             Log.e(tagForLog, "NULL activity, closing.")
             return
+        } else {
+            val manager =
+                activity!!.applicationContext.getSystemService(ClipboardManager::class.java)
+
+            val clip = ClipData.newPlainText("wwWallet log", text)
+            manager.setPrimaryClip(clip)
         }
+    }
 
-        val manager =
-            activity!!.applicationContext.getSystemService(ClipboardManager::class.java)
+    suspend fun getBaseUrl(): String = profileStorage.restore().baseUrl
 
-        val clip = ClipData.newPlainText("wwWallet log", text)
-        manager.setPrimaryClip(clip)
+    suspend fun setBaseUrl(value: String) {
+        profileStorage.store(profileStorage.restore().copy(baseUrl = value))
     }
 }
