@@ -215,7 +215,7 @@ function __decode__credentials(result) {
         result.response.userHandle = __decode(result.response.userHandle);
     }
 
-    if (result.hasOwnProperty('clientExtensionResults')) {
+    if (result.hasOwnProperty('clientExtensionResults') && result.clientExtensionResults) {
         if (result.clientExtensionResults.hasOwnProperty('prf') &&
             result.clientExtensionResults.prf.hasOwnProperty('results')) {
             console.log("PRF FOUND")
