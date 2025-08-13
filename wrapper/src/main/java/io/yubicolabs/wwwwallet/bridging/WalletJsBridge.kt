@@ -123,7 +123,6 @@ class WalletJsBridge(
         options: String,
     ) {
         val mappedOptions = JSONObject(options)
-        mappedOptions.setNested("publicKey.attestation", "none")
         YOLOLogger.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.create($promiseUuid, ${mappedOptions.toString(2)}) called.")
 
         credentialsContainerByOption(mappedOptions)
