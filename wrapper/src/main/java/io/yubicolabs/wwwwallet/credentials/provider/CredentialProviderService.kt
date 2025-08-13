@@ -27,7 +27,7 @@ import androidx.credentials.provider.CredentialEntry
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import androidx.credentials.provider.PublicKeyCredentialEntry
 import io.yubicolabs.wwwwallet.R
-import io.yubicolabs.wwwwallet.credentials.BuildInContainer
+import io.yubicolabs.wwwwallet.credentials.SoftwareContainer
 import io.yubicolabs.wwwwallet.json.getNested
 import io.yubicolabs.wwwwallet.json.toList
 import io.yubicolabs.wwwwallet.tagForLog

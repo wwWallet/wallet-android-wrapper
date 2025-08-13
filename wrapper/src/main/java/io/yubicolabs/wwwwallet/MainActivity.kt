@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
             Dispatchers.Main,
             ContainerYubico(activity = this),
             AndroidContainer(context = this),
-            SoftwareContainer(),
+            SoftwareContainer(applicationContext),
             BleClientHandler(activity = this),
             BleServerHandler(activity = this),
             if (BuildConfig.DEBUG) {
