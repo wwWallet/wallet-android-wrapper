@@ -3,9 +3,12 @@ package io.yubicolabs.wwwwallet.bridging
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.webkit.ValueCallback
+import android.widget.Toast
 import androidx.core.net.toUri
 import androidx.core.text.parseAsHtml
+import androidx.credentials.CredentialManager
 import io.yubicolabs.wwwwallet.BuildConfig
 import io.yubicolabs.wwwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 import io.yubicolabs.wwwwallet.json.toList
@@ -14,6 +17,7 @@ import org.json.JSONArray
 
 private const val SHOW_URL_ROW = "Show URL Row"
 private const val HIDE_URL_ROW = "Hide URL Row"
+
 private const val USE_DEMO_BASE_URL = "Use Demo Base URL (default)"
 private const val USE_FUNKE_BASE_URL = "Use Funke Base URL"
 private const val USE_QA_BASE_URL = "Use QA Base URL"
@@ -26,6 +30,8 @@ private const val OVERRIDE_HINT_WITH_SECURITY_KEY = "Set hints to ['security-key
 private const val OVERRIDE_HINT_WITH_CLIENT_DEVICE = "Set hints to ['client-device']"
 private const val OVERRIDE_HINT_WITH_EMULATOR = "Set hints to ['emulator']"
 private const val DO_NOT_OVERRIDE_HINT = "Reset hints"
+
+private const val OPEN_PASSKEY_PROVIDER_SETTINGS = "Open Passkey Settings"
 
 private const val LIST_SEPARATOR = "────"
 
@@ -51,6 +57,8 @@ class DebugMenuHandler(
             OVERRIDE_HINT_WITH_CLIENT_DEVICE to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['client-device'])") {} },
             OVERRIDE_HINT_WITH_EMULATOR to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints(['emulator'])") {} },
             DO_NOT_OVERRIDE_HINT to { it("$JAVASCRIPT_BRIDGE_NAME.overrideHints([])") {} },
+            LIST_SEPARATOR * maxSeparatorsCount++ to {},
+            OPEN_PASSKEY_PROVIDER_SETTINGS to { js -> openPasskeyProviderSettings() },
             LIST_SEPARATOR * maxSeparatorsCount++ to {},
             SHOW_LOGS to { js ->
                 js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
@@ -137,6 +145,19 @@ class DebugMenuHandler(
                 copyToClipboard(logs.joinToString("\n"))
             }
             .show()
+    }
+
+    fun openPasskeyProviderSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            CredentialManager.create(context).createSettingsPendingIntent().send()
+        } else {
+            Toast.makeText(
+                context,
+                "Not available on your OS version. You have ${Build.VERSION.SDK_INT} but we need $" +
+                    "${Build.VERSION_CODES.UPSIDE_DOWN_CAKE}.",
+                Toast.LENGTH_LONG,
+            ).show()
+        }
     }
 
     private fun githubFeedback(
