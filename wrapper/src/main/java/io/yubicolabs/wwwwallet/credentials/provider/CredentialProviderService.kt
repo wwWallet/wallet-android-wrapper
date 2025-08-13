@@ -172,7 +172,6 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
 
     private fun answerRequest(
         callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>,
-        // TODO: USE THIS IN THE ACTIONS FOR NAMES AND THINGSSS
         request: BeginGetCredentialRequest,
         credentials: JSONArray,
     ) {
@@ -184,8 +183,6 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
                 .getString(BUNDLE_KEY_REQUEST)
 
         val requestId = request.beginGetCredentialOptions.first().id
-
-        // / TODO: MAP TO ACTUAL CREDENTIALS!!
         val credentialEntries =
             credentials.toList().mapNotNull {
                 (it as? Map<*, *>)?.toCredentialEntry(requestJson ?: "", requestId)
@@ -216,7 +213,6 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
     }
 
     private fun createPendingIntentForSecurityCreation(credentialsJson: String): PendingIntent =
-        // TODO MAKE SENSE OF THAT ID
         PendingIntent.getActivity(
             baseContext,
             0x411,
@@ -252,15 +248,11 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
         YOLOLogger.i("TODO", "Not yet implemented")
     }
 
-    // TODO THINK ABOUT MUTIPLE SELECTION RETURNS
     private fun Map<*, *>.toCredentialEntry(
         requestJson: String,
         requestId: String,
     ): CredentialEntry {
-        // TODO convert all responses to entries
-
         val id = get("id") as String
-
         val username = get("userName") as String
         val displayname = get("userDisplayName") as String
 
@@ -272,7 +264,6 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
         bundle.putString(BUNDLE_KEY_REQUEST_JSON, requestJson)
         bundle.putByteArray(BUNDLE_KEY_CLIENT_DATA_HASH, clientDataHash)
 
-        // TODO: ADD FANCY ICON!!?
         return PublicKeyCredentialEntry(
             username = username,
             context = applicationContext,

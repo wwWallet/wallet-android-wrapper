@@ -166,8 +166,7 @@ class ContainerYubico(
                     )
             }
         } catch (e: Throwable) {
-            // 👀 - WHy? TODO
-            YOLOLogger.e(tagForLog, "Something", e)
+            YOLOLogger.e(tagForLog, "An unknown error appeared. Hide now.", e)
         }
     }
 
@@ -240,7 +239,6 @@ class ContainerYubico(
             YOLOLogger.e(tagForLog, "Unexpected error: '${th.message}'.", th)
             operation.failure(th)
         } finally {
-            // TODO: Think about cleanup
             lastOperation = null
             session.close()
         }
@@ -309,7 +307,6 @@ class ContainerYubico(
             YOLOLogger.e(tagForLog, "Unexpected error: '${th.message}'.", th)
             operation.failure(th)
         } finally {
-            // TODO: Think about cleanup
             lastOperation = null
             session.close()
         }
@@ -388,7 +385,6 @@ class ContainerYubico(
                     inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 }
 
-            // TODO: make into fancy bottom drawer
             val dialog =
                 AlertDialog.Builder(activity)
                     .setTitle("Pin Required")

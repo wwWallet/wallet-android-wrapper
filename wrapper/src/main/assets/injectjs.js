@@ -264,7 +264,7 @@ function __decode__credentials(result) {
 
     // augment pure json result with functions needed by https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential#instance_properties
     result.getClientExtensionResults = () => result.clientExtensionResults
-    result.response.getTransports = () => result.response.transports /// 👀 TODO: CHECK IF SPEC
+    result.response.getTransports = () => result.response.transports
 
     return result
 }

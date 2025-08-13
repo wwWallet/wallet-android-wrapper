@@ -31,7 +31,7 @@ class CredentialStorage(
 
     suspend fun store(container: CredentialsContainer) {
         context.dataStore.edit { preferences ->
-            // TODO: Think of secure storage
+            // TODO: Use of secure storage
             val blob = container.serialize()
             preferences[CREDENTIALS_BLOB_KEY] = blob
         }
