@@ -232,15 +232,15 @@ function __decode__credentials(result) {
             }
         }
 
-         if (result.clientExtensionResults.hasOwnProperty('largeBlob')) {
-             if (result.clientExtensionResults.largeBlob.hasOwnProperty('blob')) {
-                 result.clientExtensionResults.largeBlob.blob = __decode(
-                    result.clientExtensionResults.largeBlob.blob
-                 )
-             }
-         }
+        if (result.clientExtensionResults.hasOwnProperty('largeBlob')) {
+            if (result.clientExtensionResults.largeBlob.hasOwnProperty('blob')) {
+                result.clientExtensionResults.largeBlob.blob = __decode(
+                  result.clientExtensionResults.largeBlob.blob
+                )
+            }
+        }
 
-         if (result.clientExtensionResults.hasOwnProperty('sign')) {
+        if (result.clientExtensionResults.hasOwnProperty('sign')) {
             if (result.clientExtensionResults.sign.hasOwnProperty('generatedKey')) {
                 if (result.clientExtensionResults.sign.generatedKey.hasOwnProperty('publicKey')) {
                     result.clientExtensionResults.sign.generatedKey.publicKey =
@@ -259,7 +259,7 @@ function __decode__credentials(result) {
                     result.clientExtensionResults.sign.signature
                 );
             }
-         }
+        }
     }
 
     // augment pure json result with functions needed by https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential#instance_properties
