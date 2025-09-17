@@ -12,6 +12,7 @@ webkit = "1.13.0"
 ausweis = "2.2.1"
 credentials = "1.5.0"
 yubikit = "2.8.0"
+yubifork = "wwwwallet~with-sign-ext-SNAPSHOT"
 logback = "3.0.0"
 test-json = "20231013"
 coroutines = "1.10.1"
@@ -45,6 +46,7 @@ webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 ausweis = { group = "com.governikus.ausweisapp", name = "sdkwrapper", version.ref = "ausweis" }
 yubikit-android = { group = "com.yubico.yubikit", name = "android", version.ref = "yubikit" }
 yubikit-fido = { group = "com.yubico.yubikit", name = "fido", version.ref = "yubikit" }
+yubikit-fork = { group = "com.github.mariobodemann", name = "yubikit-android", version.ref = "yubifork" }
 logback = { group = "com.github.tony19", name = "logback-android", version.ref = "logback" }
 test-json = { group = "org.json", name = "json", version.ref = "test-json" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxtest" }
