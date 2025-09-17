@@ -130,20 +130,19 @@ function overrideNavigatorCredentialsWithBridgeCall(method) {
         }
 
 
+        // sign extension v3 https://yubicolabs.github.io/webauthn-sign-extension/3/#sctn-sign-extension
         if (options.publicKey.hasOwnProperty('extensions') &&
             options.publicKey.extensions.hasOwnProperty('sign') &&
             options.publicKey.extensions.sign.hasOwnProperty('generateKey') &&
-            options.publicKey.extensions.sign.generateKey.hasOwnProperty('phData') ) {
-            options.publicKey.extensions.sign.generateKey.phData = __encode(options.publicKey.extensions.sign.generateKey.phData)
+            options.publicKey.extensions.sign.generateKey.hasOwnProperty('tbs') ) {
+            options.publicKey.extensions.sign.generateKey.tbs = __encode(options.publicKey.extensions.sign.generateKey.tbs)
         }
-
         if (options.publicKey.hasOwnProperty('extensions') &&
             options.publicKey.extensions.hasOwnProperty('sign') &&
             options.publicKey.extensions.sign.hasOwnProperty('sign') &&
-            options.publicKey.extensions.sign.sign.hasOwnProperty('phData') ) {
-            options.publicKey.extensions.sign.sign.phData = __encode(options.publicKey.extensions.sign.sign.phData)
+            options.publicKey.extensions.sign.sign.hasOwnProperty('tbs') ) {
+            options.publicKey.extensions.sign.sign.tbs = __encode(options.publicKey.extensions.sign.sign.tbs)
         }
-
         if (options.publicKey.hasOwnProperty('extensions') &&
             options.publicKey.extensions.hasOwnProperty('sign') &&
             options.publicKey.extensions.sign.hasOwnProperty('sign') &&
@@ -235,22 +234,21 @@ function __decode__credentials(result) {
         if (result.clientExtensionResults.hasOwnProperty('largeBlob')) {
             if (result.clientExtensionResults.largeBlob.hasOwnProperty('blob')) {
                 result.clientExtensionResults.largeBlob.blob = __decode(
-                  result.clientExtensionResults.largeBlob.blob
-                )
+                    result.clientExtensionResults.largeBlob.blob
+                );
             }
         }
 
+        // sign extension v3 https://yubicolabs.github.io/webauthn-sign-extension/3/#sctn-sign-extension
         if (result.clientExtensionResults.hasOwnProperty('sign')) {
             if (result.clientExtensionResults.sign.hasOwnProperty('generatedKey')) {
                 if (result.clientExtensionResults.sign.generatedKey.hasOwnProperty('publicKey')) {
                     result.clientExtensionResults.sign.generatedKey.publicKey =
-                        __decode(result.clientExtensionResults.sign.generatedKey.publicKey
-                    )
+                        __decode(result.clientExtensionResults.sign.generatedKey.publicKey);
                 }
-                if (result.clientExtensionResults.sign.generatedKey.hasOwnProperty('keyHandle')) {
-                    result.clientExtensionResults.sign.generatedKey.keyHandle = __decode(
-                        result.clientExtensionResults.sign.generatedKey.keyHandle
-                    );
+                if (result.clientExtensionResults.sign.generatedKey.hasOwnProperty('attestationObject')) {
+                    result.clientExtensionResults.sign.generatedKey.attestationObject =
+                        __decode(result.clientExtensionResults.sign.generatedKey.attestationObject);
                 }
             }
 
