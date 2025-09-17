@@ -24,6 +24,13 @@ import com.yubico.yubikit.core.util.Callback
 import com.yubico.yubikit.core.util.Result
 import com.yubico.yubikit.fido.client.BasicWebAuthnClient
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable
+import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
+import com.yubico.yubikit.fido.client.extensions.CredPropsExtension
+import com.yubico.yubikit.fido.client.extensions.CredProtectExtension
+import com.yubico.yubikit.fido.client.extensions.HmacSecretExtension
+import com.yubico.yubikit.fido.client.extensions.LargeBlobExtension
+import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension
+import com.yubico.yubikit.fido.client.extensions.SignExtension
 import com.yubico.yubikit.fido.ctap.Ctap2Session
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions
@@ -200,7 +207,7 @@ class YubicoContainer(
         operation: CreateOperation,
         pin: String?,
     ) {
-        val client = BasicWebAuthnClient(session)
+        val client = createClient(session)
 
         val createOptions = operation.options
         val publicKey = createOptions.publicKey!!
@@ -244,6 +251,20 @@ class YubicoContainer(
         }
     }
 
+    private fun createClient(session: Ctap2Session) =
+        BasicWebAuthnClient(
+            session,
+            listOf(
+                CredPropsExtension(),
+                CredBlobExtension(),
+                CredProtectExtension(),
+                HmacSecretExtension(),
+                MinPinLengthExtension(),
+                LargeBlobExtension(),
+                SignExtension(),
+            ),
+        )
+
     private fun getWithDevice(
         device: YubiKeyDevice,
         operation: GetOperation,
@@ -268,7 +289,7 @@ class YubicoContainer(
         operation: GetOperation,
         pin: String?,
     ) {
-        val client = BasicWebAuthnClient(session)
+        val client = createClient(session)
 
         val getOptions = operation.options
         val publicKey = getOptions.publicKey!!
