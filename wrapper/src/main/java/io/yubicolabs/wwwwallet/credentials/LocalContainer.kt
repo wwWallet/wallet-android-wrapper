@@ -5,7 +5,13 @@ package io.yubicolabs.wwwwallet.credentials
 import android.content.Context
 import android.content.pm.PackageManager
 import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
+import android.security.keystore.KeyProperties.DIGEST_SHA256
+import android.security.keystore.KeyProperties.DIGEST_SHA384
+import android.security.keystore.KeyProperties.DIGEST_SHA512
+import android.security.keystore.KeyProperties.KEY_ALGORITHM_EC
+import android.security.keystore.KeyProperties.KEY_ALGORITHM_RSA
+import android.security.keystore.KeyProperties.PURPOSE_SIGN
+import android.security.keystore.KeyProperties.PURPOSE_VERIFY
 import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
 import android.util.Base64.URL_SAFE
@@ -22,13 +28,17 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
-import java.security.KeyStore.Entry
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
+import java.security.Signature
+import java.security.spec.AlgorithmParameterSpec
 import java.security.spec.ECGenParameterSpec
+import java.security.spec.RSAKeyGenParameterSpec
+import java.security.spec.RSAKeyGenParameterSpec.F4
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -41,59 +51,45 @@ class LocalContainer(
 ) : Container {
     private val origin: String = BuildConfig.APPLICATION_ID
     private val storage: KeyStore = KeyStore.getInstance(DEFAULT_KEY_STORE).apply { load(null) }
-    val isStrongBoxed: Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
+    val isStrongBoxed: Boolean =
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
 
     override fun create(
         options: JSONObject,
         successCallback: (JSONObject) -> Unit,
         failureCallback: (Throwable) -> Unit,
     ) = try {
-        // todo check rp id and options
+        val credential = createCredential(options)
+        successCallback(credential)
+    } catch (th: Throwable) {
+        YOLOLogger.e(tagForLog, "Cannot create credential.", th)
+        failureCallback(th)
+    }
+
+    private fun createCredential(options: JSONObject): JSONObject {
+        val selectedAlgorithm = selectAlgorithm(options)
+        val (algorithmSpec, keyAlgorithm) = getAlgorithmParams(selectedAlgorithm)
+
         val credentialId = ByteArray(32)
         SecureRandom().nextBytes(credentialId)
 
-        val challenge = (
+        val challenge =
             (options.getNested("publicKey.challenge") as? String)?.decodeBase64()?.toByteArray()
                 ?: byteArrayOf()
-        )
-        val specBuilder =
-            KeyGenParameterSpec
-                .Builder(
-                    // keystoreAlias =
-                    "$origin+${credentialId.toHexString()}",
-                    // purposes =
-                    KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY,
-                )
-                .setAlgorithmParameterSpec(
-                    // TODO Update algorithm name to match requested
-                    ECGenParameterSpec("secp256r1"),
-                )
-                .setIsStrongBoxBacked(
-                    isStrongBoxed,
-                ).setDigests(
-                    // TODO: CHECK AND REMOVE NOT SPECIFIED DIGEST ALGOS
-                    KeyProperties.DIGEST_SHA256,
-                ).setAttestationChallenge(
-                    challenge,
-                ).setUserPresenceRequired(true)
 
-        val spec = specBuilder.build()
-        val keyPairGen =
-            KeyPairGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_EC,
-                DEFAULT_KEY_STORE,
-            )
-        keyPairGen.initialize(spec)
-
-        val keyPair = keyPairGen.genKeyPair()
+        val spec = buildKeyGenParameterSpec(credentialId, challenge, algorithmSpec)
+        val keyPair = generateKeyPair(keyAlgorithm, spec)
 
         val clientDataJson =
+            getClientOptions(
+                type = "webauthn.create",
+                challenge = String(challenge),
+                origin = origin,
+            )
+
+        val clientDataJsonB64 =
             encodeToString(
-                getClientOptions(
-                    type = "webauthn.create",
-                    challenge = String(challenge),
-                    origin = origin,
-                ),
+                clientDataJson,
                 NO_PADDING or NO_WRAP or URL_SAFE,
             )
 
@@ -108,63 +104,120 @@ class LocalContainer(
                 signatureCount = 0,
             )
 
-        val authenticatorData =
-            createAuthenticatorData(
-                rpId = origin,
-                // TODO: VERIFIY WITH OPTIONS,
-                userPresence = true,
-                // TODO: STORE
-                signatureCounter = 0,
-                // TODO?
-                userVerification = true,
-                attestedCredentialData = createAttestedCredentialData(credentialId, keyPair.public.encoded),
-                // TODO add extensions
-                extensions = null,
+        val credential =
+            createPublicKeyCredential(
+                credentialId,
+                clientDataJsonB64,
+                attestationObject,
             )
 
+        YOLOLogger.i(tagForLog, "Created credential: $credential")
+
+        return credential
+    }
+
+    private fun selectAlgorithm(options: JSONObject): Int {
+        val pubKeyCredParams =
+            (options.getNested("publicKey.pubKeyCredParams") as? JSONArray)?.toList()
+                ?: listOf()
+
+        val selectedAlgorithm =
+            pubKeyCredParams.firstNotNullOfOrNull {
+                val alg = (it as? JSONObject)?.get("alg") as? Int
+                if (alg != null && isAlgorithmSupported(alg)) {
+                    alg
+                } else {
+                    null
+                }
+            }
+
+        return selectedAlgorithm
+            ?: throw IllegalArgumentException("No supported algorithm found in pubKeyCredParams")
+    }
+
+    private fun buildKeyGenParameterSpec(
+        credentialId: ByteArray,
+        challenge: ByteArray,
+        algorithmSpec: AlgorithmParameterSpec,
+    ): KeyGenParameterSpec {
+        return KeyGenParameterSpec
+            .Builder(
+                "$origin+${credentialId.toHexString()}",
+                PURPOSE_SIGN or PURPOSE_VERIFY,
+            )
+            .setAlgorithmParameterSpec(algorithmSpec)
+            .setIsStrongBoxBacked(
+                isStrongBoxed,
+            ).setDigests(
+                DIGEST_SHA256,
+                DIGEST_SHA384,
+                DIGEST_SHA512,
+            ).setAttestationChallenge(
+                challenge,
+            ).setUserPresenceRequired(true)
+            .build()
+    }
+
+    private fun generateKeyPair(
+        keyAlgorithm: String,
+        spec: KeyGenParameterSpec,
+    ): KeyPair {
+        val keyPairGen =
+            KeyPairGenerator.getInstance(
+                keyAlgorithm,
+                DEFAULT_KEY_STORE,
+            )
+        keyPairGen.initialize(spec)
+        return keyPairGen.genKeyPair()
+    }
+
+    private fun createPublicKeyCredential(
+        credentialId: ByteArray,
+        clientDataJsonB64: String,
+        attestationObject: String,
+    ): JSONObject {
         val response =
             JSONObject(
                 mapOf(
-                    "clientDataJSON" to clientDataJson,
+                    "clientDataJSON" to clientDataJsonB64,
                     "attestationObject" to attestationObject,
                     "transports" to JSONArray(arrayOf("internal", "hybrid")),
-                    "authenticatorData" to authenticatorData,
-                    "publicKeyAlgorithm" to -7,
-                    "publicKey" to
-                        encodeToString(
-                            keyPair.public.encoded,
-                            NO_PADDING or NO_WRAP or URL_SAFE,
-                        ),
                 ),
             )
 
-        val credential =
-            JSONObject(
-                mapOf(
-                    "rawId" to
-                        encodeToString(
-                            credentialId,
-                            NO_PADDING or NO_WRAP or URL_SAFE,
-                        ),
-                    "id" to
-                        encodeToString(
-                            credentialId,
-                            NO_PADDING or NO_WRAP or URL_SAFE,
-                        ),
-                    "type" to "public-key",
-                    "authenticatorAttachment" to "platform",
-                    "response" to response,
-                    "clientExtensionResults" to null,
-                    // TODO: Add extensions, etc...
-                ),
-            )
+        return JSONObject(
+            mapOf(
+                "rawId" to
+                    encodeToString(
+                        credentialId,
+                        NO_PADDING or NO_WRAP or URL_SAFE,
+                    ),
+                "id" to
+                    encodeToString(
+                        credentialId,
+                        NO_PADDING or NO_WRAP or URL_SAFE,
+                    ),
+                "type" to "public-key",
+                "authenticatorAttachment" to "platform",
+                "response" to response,
+                "clientExtensionResults" to JSONObject(),
+            ),
+        )
+    }
 
-        YOLOLogger.i(tagForLog, "DEBUG ME")
-
-        successCallback(credential)
-    } catch (th: Throwable) {
-        YOLOLogger.e(tagForLog, "Cannot create credential.", th)
-        failureCallback(th)
+    private fun getClientOptions(
+        type: String,
+        challenge: String,
+        origin: String,
+    ): ByteArray {
+        return JSONObject(
+            mapOf(
+                "type" to type,
+                "challenge" to challenge,
+                "origin" to origin,
+                "crossOrigin" to false,
+            ),
+        ).toString().toByteArray()
     }
 
     private fun createAttestationObject(
@@ -173,7 +226,7 @@ class LocalContainer(
         publicKey: ByteArray,
         requireUserVerification: Boolean,
         signatureCount: Int,
-    ): String? {
+    ): String {
         val attestedCredentialData = createAttestedCredentialData(credentialId, publicKey)
 
         val authenticatorData =
@@ -215,7 +268,7 @@ class LocalContainer(
         userPresence: Boolean,
         userVerification: Boolean,
         signatureCounter: Int,
-        attestedCredentialData: ByteArray,
+        attestedCredentialData: ByteArray?,
         extensions: ByteArray?,
     ): ByteArray {
         val sha256 =
@@ -230,9 +283,13 @@ class LocalContainer(
         val at = attestedCredentialData != null
 
         val flags = generateAuthenticatorDataFlags(ed, at, userVerification, userPresence)
-
+        val authenticatorDataLength =
+            32 + 1 + 4 + (
+                attestedCredentialData?.size
+                    ?: 0
+            ) + (extensions?.size ?: 0)
         val authenticatorData =
-            ByteBuffer.allocate(32 + 1 + 4 + (if (at) attestedCredentialData.size else 0) + (if (ed) extensions.size else 0))
+            ByteBuffer.allocate(authenticatorDataLength)
                 .order(ByteOrder.BIG_ENDIAN)
                 .put(rpIdHash, 0, 32)
                 .put(flags)
@@ -253,22 +310,33 @@ class LocalContainer(
         up: Boolean,
     ): Byte {
         var flags = 0
-        if (ed) {
-            flags++
-        }
-        flags = flags shl 1
-        if (at) {
-            flags++
-        }
-        flags = flags shl 4
-        if (uv) {
-            flags++
-        }
-        flags = flags shl 2
         if (up) {
-            flags++
+            flags = flags or 0x01
+        }
+        if (uv) {
+            flags = flags or 0x04
+        }
+        if (at) {
+            flags = flags or 0x40
+        }
+        if (ed) {
+            flags = flags or 0x80
         }
         return flags.toByte()
+    }
+
+    private fun isAlgorithmSupported(alg: Int): Boolean {
+        return alg in listOf(-7, -257, -35, -36)
+    }
+
+    private fun getAlgorithmParams(alg: Int): Pair<AlgorithmParameterSpec, String> {
+        return when (alg) {
+            -7 -> Pair(ECGenParameterSpec("secp256r1"), KEY_ALGORITHM_EC)
+            -257 -> Pair(RSAKeyGenParameterSpec(2048, F4), KEY_ALGORITHM_RSA)
+            -35 -> Pair(ECGenParameterSpec("secp384r1"), KEY_ALGORITHM_EC)
+            -36 -> Pair(ECGenParameterSpec("secp521r1"), KEY_ALGORITHM_EC)
+            else -> throw IllegalArgumentException("Unsupported algorithm: $alg")
+        }
     }
 
     override fun get(
@@ -283,6 +351,12 @@ class LocalContainer(
             ).mapNotNull {
                 (it as? JSONObject)?.toMap()
             }
+
+        val challenge =
+            (options.getNested("publicKey.challenge") as? String)?.decodeBase64()?.toByteArray()
+                ?: byteArrayOf()
+
+        val rpId = options.getNested("publicKey.rpId") as? String ?: origin
 
         // retrieve all credentials
         val selectedCredentials =
@@ -304,8 +378,8 @@ class LocalContainer(
             // TODO MULTIPLE MATCHES??
 
             val firstKey = finalSelection.keys.first()
-            val first = finalSelection[firstKey]!!
-            val credentialResponse = first.toResponse(firstKey)
+            val first = finalSelection[firstKey]!! as KeyStore.PrivateKeyEntry
+            val credentialResponse = first.toResponse(firstKey, challenge, rpId)
 
             successCallback(
                 credentialResponse,
@@ -325,18 +399,80 @@ class LocalContainer(
         failureCallback(th)
     }
 
-    private fun Entry.toResponse(id: String): JSONObject {
-        // TODO: Transform into correct response
-        val json = JSONObject()
+    private fun KeyStore.PrivateKeyEntry.toResponse(
+        id: String,
+        challenge: ByteArray,
+        rpId: String,
+    ): JSONObject {
+        val credentialId =
+            id.replace("$origin+", "").hexToByteArray()
 
-        val credentialId = id.replace("$origin+", "")
-        json.put("id", credentialId)
-        json.put("type", "public-key")
-        json.put("raw_id", credentialId.hexToByteArray())
-        json.put("authenticator_attachment", "")
-        json.put("response", "")
-        json.put("client_extension_results", null)
+        val clientDataJson =
+            getClientOptions(
+                type = "webauthn.get",
+                challenge = String(challenge),
+                origin = origin,
+            )
+        val clientDataJsonB64 =
+            encodeToString(
+                clientDataJson,
+                NO_PADDING or NO_WRAP or URL_SAFE,
+            )
+        val clientDataJsonHash = MessageDigest.getInstance("SHA-256").digest(clientDataJson)
 
-        return json
+        val authenticatorData =
+            createAuthenticatorData(
+                rpId = rpId,
+                userPresence = true,
+                userVerification = true,
+                signatureCounter = 0,
+                attestedCredentialData = null,
+                extensions = null,
+            )
+
+        val signature =
+            Signature.getInstance("SHA256withECDSA").run {
+                initSign(privateKey)
+                update(authenticatorData)
+                update(clientDataJsonHash)
+                sign()
+            }
+
+        val response =
+            JSONObject(
+                mapOf(
+                    "clientDataJSON" to clientDataJsonB64,
+                    "authenticatorData" to
+                        encodeToString(
+                            authenticatorData,
+                            NO_PADDING or NO_WRAP or URL_SAFE,
+                        ),
+                    "signature" to
+                        encodeToString(
+                            signature,
+                            NO_PADDING or NO_WRAP or URL_SAFE,
+                        ),
+                    "userHandle" to null,
+                ),
+            )
+
+        return JSONObject(
+            mapOf(
+                "rawId" to
+                    encodeToString(
+                        credentialId,
+                        NO_PADDING or NO_WRAP or URL_SAFE,
+                    ),
+                "id" to
+                    encodeToString(
+                        credentialId,
+                        NO_PADDING or NO_WRAP or URL_SAFE,
+                    ),
+                "type" to "public-key",
+                "authenticatorAttachment" to "platform",
+                "response" to response,
+                "clientExtensionResults" to JSONObject(),
+            ),
+        )
     }
 }
