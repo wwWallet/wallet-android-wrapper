@@ -83,7 +83,7 @@ class LocalContainer(
         val clientDataJson =
             getClientOptions(
                 type = "webauthn.create",
-                challenge = String(challenge),
+                challenge = challenge,
                 origin = origin,
             )
 
@@ -93,7 +93,7 @@ class LocalContainer(
                 NO_PADDING or NO_WRAP or URL_SAFE,
             )
 
-        val attestationObject =
+        val (attestationObject, authenticatorData) =
             createAttestationObject(
                 rpId = origin,
                 credentialId = credentialId,
@@ -109,6 +109,9 @@ class LocalContainer(
                 credentialId,
                 clientDataJsonB64,
                 attestationObject,
+                authenticatorData,
+                selectedAlgorithm,
+                keyPair.public.encoded,
             )
 
         YOLOLogger.i(tagForLog, "Created credential: $credential")
@@ -117,13 +120,12 @@ class LocalContainer(
     }
 
     private fun selectAlgorithm(options: JSONObject): Int {
-        val pubKeyCredParams =
-            (options.getNested("publicKey.pubKeyCredParams") as? JSONArray)?.toList()
-                ?: listOf()
+        val pubKeyCredParams: List<*> =
+            options.getNested("publicKey.pubKeyCredParams") as? List<*> ?: listOf<Any>()
 
         val selectedAlgorithm =
             pubKeyCredParams.firstNotNullOfOrNull {
-                val alg = (it as? JSONObject)?.get("alg") as? Int
+                val alg = (it as? Map<*, *>)?.get("alg") as? Int
                 if (alg != null && isAlgorithmSupported(alg)) {
                     alg
                 } else {
@@ -175,12 +177,26 @@ class LocalContainer(
         credentialId: ByteArray,
         clientDataJsonB64: String,
         attestationObject: String,
+        authenticatorData: ByteArray,
+        publicKeyAlgorithm: Int,
+        publicKey: ByteArray,
     ): JSONObject {
         val response =
             JSONObject(
                 mapOf(
                     "clientDataJSON" to clientDataJsonB64,
                     "attestationObject" to attestationObject,
+                    "authenticatorData" to
+                        encodeToString(
+                            authenticatorData,
+                            NO_PADDING or NO_WRAP or URL_SAFE,
+                        ),
+                    "publicKeyAlgorithm" to publicKeyAlgorithm,
+                    "publicKey" to
+                        encodeToString(
+                            publicKey,
+                            NO_PADDING or NO_WRAP or URL_SAFE,
+                        ),
                     "transports" to JSONArray(arrayOf("internal", "hybrid")),
                 ),
             )
@@ -207,13 +223,13 @@ class LocalContainer(
 
     private fun getClientOptions(
         type: String,
-        challenge: String,
+        challenge: ByteArray,
         origin: String,
     ): ByteArray {
         return JSONObject(
             mapOf(
                 "type" to type,
-                "challenge" to challenge,
+                "challenge" to encodeToString(challenge, NO_PADDING or NO_WRAP or URL_SAFE),
                 "origin" to origin,
                 "crossOrigin" to false,
             ),
@@ -226,7 +242,7 @@ class LocalContainer(
         publicKey: ByteArray,
         requireUserVerification: Boolean,
         signatureCount: Int,
-    ): String {
+    ): Pair<String, ByteArray> {
         val attestedCredentialData = createAttestedCredentialData(credentialId, publicKey)
 
         val authenticatorData =
@@ -239,14 +255,16 @@ class LocalContainer(
                 null,
             )
 
-        return encodeToString(
-            CBORObject.NewMap()
-                .Add("fmt", "none")
-                .Add("attStmt", CBORObject.NewMap())
-                .Add("authData", authenticatorData)
-                .EncodeToBytes(),
-            NO_PADDING or NO_WRAP or URL_SAFE,
-        )
+        val attestationObject =
+            encodeToString(
+                CBORObject.NewMap()
+                    .Add("fmt", "none")
+                    .Add("attStmt", CBORObject.NewMap())
+                    .Add("authData", authenticatorData)
+                    .EncodeToBytes(),
+                NO_PADDING or NO_WRAP or URL_SAFE,
+            )
+        return attestationObject to authenticatorData
     }
 
     private fun createAttestedCredentialData(
@@ -410,7 +428,7 @@ class LocalContainer(
         val clientDataJson =
             getClientOptions(
                 type = "webauthn.get",
-                challenge = String(challenge),
+                challenge = challenge,
                 origin = origin,
             )
         val clientDataJsonB64 =
