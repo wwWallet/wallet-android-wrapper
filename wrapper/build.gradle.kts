@@ -121,6 +121,7 @@ dependencies {
     implementation(libs.logback)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.cbor)
+    implementation(libs.cose)
 
     // digital credentials api
     implementation(libs.playservices.identity.credentials)

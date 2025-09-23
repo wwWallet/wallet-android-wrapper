@@ -2,6 +2,7 @@
 
 package io.yubicolabs.wwwwallet.credentials
 
+import COSE.OneKey
 import android.content.Context
 import android.content.pm.PackageManager
 import android.security.keystore.KeyGenParameterSpec
@@ -9,7 +10,6 @@ import android.security.keystore.KeyProperties.DIGEST_SHA256
 import android.security.keystore.KeyProperties.DIGEST_SHA384
 import android.security.keystore.KeyProperties.DIGEST_SHA512
 import android.security.keystore.KeyProperties.KEY_ALGORITHM_EC
-import android.security.keystore.KeyProperties.KEY_ALGORITHM_RSA
 import android.security.keystore.KeyProperties.PURPOSE_SIGN
 import android.security.keystore.KeyProperties.PURPOSE_VERIFY
 import android.util.Base64.NO_PADDING
@@ -37,8 +37,6 @@ import java.security.SecureRandom
 import java.security.Signature
 import java.security.spec.AlgorithmParameterSpec
 import java.security.spec.ECGenParameterSpec
-import java.security.spec.RSAKeyGenParameterSpec
-import java.security.spec.RSAKeyGenParameterSpec.F4
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -97,7 +95,7 @@ class LocalContainer(
             createAttestationObject(
                 rpId = origin,
                 credentialId = credentialId,
-                publicKey = keyPair.public.encoded,
+                publicKey = keyPair.toCoseBytes(),
                 // TODO: CHECK WITH OPTIONS
                 requireUserVerification = true,
                 // TODO: STORE THIS?
@@ -350,7 +348,6 @@ class LocalContainer(
     private fun getAlgorithmParams(alg: Int): Pair<AlgorithmParameterSpec, String> {
         return when (alg) {
             -7 -> Pair(ECGenParameterSpec("secp256r1"), KEY_ALGORITHM_EC)
-            -257 -> Pair(RSAKeyGenParameterSpec(2048, F4), KEY_ALGORITHM_RSA)
             -35 -> Pair(ECGenParameterSpec("secp384r1"), KEY_ALGORITHM_EC)
             -36 -> Pair(ECGenParameterSpec("secp521r1"), KEY_ALGORITHM_EC)
             else -> throw IllegalArgumentException("Unsupported algorithm: $alg")
@@ -493,4 +490,30 @@ class LocalContainer(
             ),
         )
     }
+}
+
+private fun KeyPair.toCoseBytes(): ByteArray =
+    try {
+        OneKey(public, null).EncodeToBytes()
+    } catch (th: Throwable) {
+        YOLOLogger.e("COSE", "Error while building the cose bytes.", th)
+        byteArrayOf()
+    }
+
+private fun Map<Int, Any>.toCbor(): CBORObject {
+    val result = CBORObject.NewMap()
+
+    forEach {
+        val (key, value) = it
+        val typedValue =
+            when (value) {
+                is Int -> CBORObject.FromObject(value)
+                is ByteArray -> CBORObject.FromObject(value)
+                else -> throw RuntimeException("Type '${value.javaClass.simpleName}' did not map to any registered cbor types.")
+            }
+
+        result.set(key, typedValue)
+    }
+
+    return result
 }
