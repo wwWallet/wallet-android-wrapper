@@ -1,5 +1,6 @@
 package io.yubicolabs.wwwwallet.logging
 
+import android.util.Log
 import ch.qos.logback.classic.android.LogcatAppender
 import ch.qos.logback.classic.spi.ILoggingEvent
 
@@ -21,34 +22,52 @@ object YOLOLogger {
     fun e(
         tag: String,
         message: String,
-    ) = append("$tag: $message")
+    ) {
+        Log.e(tag, message)
+        append("$tag: $message")
+    }
 
     fun e(
         tag: String,
         message: String,
         throwable: Throwable,
-    ) = append("$tag: $message (${throwable.stackTraceToString()})")
+    ) {
+        Log.e(tag, message, throwable)
+        append("$tag: $message (${throwable.stackTraceToString()})")
+    }
 
     fun w(
         tag: String,
         message: String,
-    ) = append("$tag: $message")
+    ) {
+        Log.w(tag, message)
+        append("$tag: $message")
+    }
 
     fun i(
         tag: String,
         message: String,
-    ) = append("$tag: $message")
+    ) {
+        Log.i(tag, message)
+        append("$tag: $message")
+    }
 
     fun i(
         tag: String,
         message: String,
         throwable: Throwable,
-    ) = append("$tag: $message (${throwable.stackTraceToString()})")
+    ) {
+        Log.i(tag, message, throwable)
+        append("$tag: $message (${throwable.stackTraceToString()})")
+    }
 
     fun d(
         tag: String,
         message: String,
-    ) = append("$tag: $message")
+    ) {
+        Log.d(tag, message)
+        append("$tag: $message")
+    }
 }
 
 class Logger : LogcatAppender() {
