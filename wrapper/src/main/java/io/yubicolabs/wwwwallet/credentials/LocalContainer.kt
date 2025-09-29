@@ -2,6 +2,7 @@
 
 package io.yubicolabs.wwwwallet.credentials
 
+import COSE.KeyKeys
 import COSE.OneKey
 import android.content.Context
 import android.content.pm.PackageManager
@@ -93,9 +94,9 @@ class LocalContainer(
 
         val (attestationObject, authenticatorData) =
             createAttestationObject(
-                rpId = origin,
+                rpId = options.getNested("publicKey.rp.id") as? String ?: "",
                 credentialId = credentialId,
-                publicKey = keyPair.toCoseBytes(),
+                publicKey = keyPair.toCoseBytes(selectedAlgorithm),
                 // TODO: CHECK WITH OPTIONS
                 requireUserVerification = true,
                 // TODO: STORE THIS?
@@ -492,9 +493,12 @@ class LocalContainer(
     }
 }
 
-private fun KeyPair.toCoseBytes(): ByteArray =
+private fun KeyPair.toCoseBytes(algorithm: Int): ByteArray =
     try {
-        OneKey(public, null).EncodeToBytes()
+        OneKey(public, null).run {
+            add(KeyKeys.Algorithm, CBORObject.FromObject(algorithm))
+            EncodeToBytes()
+        }
     } catch (th: Throwable) {
         YOLOLogger.e("COSE", "Error while building the cose bytes.", th)
         byteArrayOf()
