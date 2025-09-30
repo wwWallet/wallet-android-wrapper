@@ -23,15 +23,8 @@ import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import org.json.JSONObject
 import androidx.credentials.provider.CredentialProviderService as AndroidCredentialProviderService
 
-private const val BASE_ID: Int = 12341
-
-private const val CREATE_BASE_REQUEST_CODE_BASE: Int = BASE_ID + 0
-const val CREATE_SECURITY_KEY_REQUEST_CODE: Int = CREATE_BASE_REQUEST_CODE_BASE + 0
-const val CREATE_CLIENT_DEVICE_REQUEST_CODE: Int = CREATE_BASE_REQUEST_CODE_BASE + 1
-
-private const val GET_CREDENTIAL_REQUEST_CODE_BASE: Int = BASE_ID + 10
-const val GET_SECURITY_KEY_REQUEST_CODE: Int = GET_CREDENTIAL_REQUEST_CODE_BASE + 0
-const val GET_CLIENT_DEVICE_REQUEST_CODE: Int = GET_CREDENTIAL_REQUEST_CODE_BASE + 1
+const val CREATE_CLIENT_DEVICE_REQUEST_CODE: Int = 12341
+const val GET_CLIENT_DEVICE_REQUEST_CODE: Int = 12345
 
 const val BUNDLE_KEY_REQUEST: String = "androidx.credentials.BUNDLE_KEY_REQUEST_JSON"
 
@@ -59,12 +52,6 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
                 BeginCreateCredentialResponse(
                     createEntries =
                         listOf(
-                            createCreateEntry(
-                                accountName = baseContext.getString(R.string.credential_provider_create_external_device_description),
-                                userId = userId,
-                                requestCode = CREATE_SECURITY_KEY_REQUEST_CODE,
-                                requestId = requestId,
-                            ),
                             createCreateEntry(
                                 accountName = baseContext.getString(R.string.credential_provider_create_android_description),
                                 userId = userId,
@@ -133,15 +120,6 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
         val requestId = request.beginGetCredentialOptions.first().id
 
         return listOf(
-            AuthenticationAction(
-                title = applicationContext.getString(R.string.credential_provider_create_external_device_description),
-                pendingIntent =
-                    createPendingIntentForGetRequest(
-                        GET_SECURITY_KEY_REQUEST_CODE,
-                        requestId,
-                        requestJson,
-                    ),
-            ),
             AuthenticationAction(
                 title = applicationContext.getString(R.string.credential_provider_create_android_description),
                 pendingIntent =

@@ -34,7 +34,6 @@ import androidx.lifecycle.lifecycleScope
 import io.yubicolabs.wwwwallet.R
 import io.yubicolabs.wwwwallet.credentials.Container
 import io.yubicolabs.wwwwallet.credentials.LocalContainer
-import io.yubicolabs.wwwwallet.credentials.YubicoContainer
 import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 import kotlinx.coroutines.Dispatchers
@@ -43,13 +42,11 @@ import org.json.JSONObject
 import kotlin.uuid.ExperimentalUuidApi
 
 class PasskeyProviderActivity : ComponentActivity() {
-    lateinit var yubicoContainer: Container
     lateinit var localContainer: Container
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        yubicoContainer = YubicoContainer(activity = this)
         localContainer =
             LocalContainer(context = this).apply {
                 YOLOLogger.i("KEY_STORE", "isStrongBoxed: $isStrongBoxed.")
@@ -100,9 +97,8 @@ class PasskeyProviderActivity : ComponentActivity() {
         val requestId = intent.getStringExtra(EXTRA_KEY_REQUEST_ID)
 
         when (requestCode) {
-            CREATE_SECURITY_KEY_REQUEST_CODE, CREATE_CLIENT_DEVICE_REQUEST_CODE -> createRequest(requestCode)
-
-            GET_SECURITY_KEY_REQUEST_CODE, GET_CLIENT_DEVICE_REQUEST_CODE -> getRequest(requestCode)
+            CREATE_CLIENT_DEVICE_REQUEST_CODE -> createRequest(requestCode)
+            GET_CLIENT_DEVICE_REQUEST_CODE -> getRequest(requestCode)
 
             else -> {
                 Toast.makeText(
@@ -128,7 +124,6 @@ class PasskeyProviderActivity : ComponentActivity() {
 
         val container =
             when (requestCode) {
-                GET_SECURITY_KEY_REQUEST_CODE -> yubicoContainer
                 GET_CLIENT_DEVICE_REQUEST_CODE -> localContainer
                 else -> null
             }
@@ -188,7 +183,6 @@ class PasskeyProviderActivity : ComponentActivity() {
 
             val container =
                 when (requestCode) {
-                    CREATE_SECURITY_KEY_REQUEST_CODE -> yubicoContainer
                     CREATE_CLIENT_DEVICE_REQUEST_CODE -> localContainer
                     else -> null
                 }

@@ -5,9 +5,8 @@
   \"include\": \"https://demo.wwwallet.org/.well-known/assetlinks.json\"
 }]
     </string>
-    <string name="credential_provider_create_android_description">on this phone</string>
-    <string name="credential_provider_create_external_device_description">on a security key</string>
-    <string name="credential_provider_standby_message">Please attach or present security key.</string>
+    <string name="credential_provider_create_android_description">Stored in wwWallet</string>
+    <string name="credential_provider_standby_message">Please wait …</string>
     <string name="title_activity_credential_create">Credential Create Activity</string>
 
     <string name="shortcut_open_funke">funke.wwwallet.org</string>
