@@ -34,9 +34,11 @@ import androidx.lifecycle.lifecycleScope
 import io.yubicolabs.wwwwallet.R
 import io.yubicolabs.wwwwallet.credentials.Container
 import io.yubicolabs.wwwwallet.credentials.LocalContainer
+import io.yubicolabs.wwwwallet.json.getNested
 import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import kotlin.uuid.ExperimentalUuidApi
@@ -114,6 +116,10 @@ class PasskeyProviderActivity : ComponentActivity() {
     }
 
     private fun getRequest(requestCode: Int) {
+        if (requestCode != GET_CLIENT_DEVICE_REQUEST_CODE) {
+            return
+        }
+
         YOLOLogger.d(tagForLog, "Get credential request found.")
 
         val publicKeyRequest = intent.getStringExtra(EXTRA_KEY_REQUEST_OPTIONS) ?: ""
@@ -122,13 +128,7 @@ class PasskeyProviderActivity : ComponentActivity() {
                 mutableMapOf("publicKey" to JSONObject(publicKeyRequest)),
             )
 
-        val container =
-            when (requestCode) {
-                GET_CLIENT_DEVICE_REQUEST_CODE -> localContainer
-                else -> null
-            }
-
-        container?.get(
+        localContainer.get(
             options = requestOptions,
             successCallback = { credentialJson ->
                 val result = Intent()
@@ -181,13 +181,7 @@ class PasskeyProviderActivity : ComponentActivity() {
                     mutableMapOf("publicKey" to publicKey),
                 )
 
-            val container =
-                when (requestCode) {
-                    CREATE_CLIENT_DEVICE_REQUEST_CODE -> localContainer
-                    else -> null
-                }
-
-            container?.create(
+            localContainer.create(
                 options = requestJson,
                 successCallback = {
                     val registrationResponseJson = it.toString()
