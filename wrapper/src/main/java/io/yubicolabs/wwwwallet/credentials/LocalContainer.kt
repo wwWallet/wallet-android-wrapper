@@ -29,15 +29,20 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.security.PrivateKey
 import java.security.SecureRandom
 import java.security.Signature
 import java.security.spec.AlgorithmParameterSpec
 import java.security.spec.ECGenParameterSpec
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -49,9 +54,18 @@ class LocalContainer(
     val aaguid: Uuid = Uuid.random(),
 ) : Container {
     private val origin: String = BuildConfig.APPLICATION_ID
-    private val storage: KeyStore = KeyStore.getInstance(DEFAULT_KEY_STORE).apply { load(null) }
+
+    private val secureStore: KeyStore = KeyStore.getInstance(DEFAULT_KEY_STORE).apply { load(null) }
+
     val isStrongBoxed: Boolean =
         context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
+
+    private val sha256 =
+        try {
+            MessageDigest.getInstance("SHA-256")
+        } catch (e: NoSuchAlgorithmException) {
+            throw RuntimeException("SHA-256 is not available", e)
+        }
 
     override fun create(
         options: JSONObject,
@@ -115,6 +129,8 @@ class LocalContainer(
 
         YOLOLogger.i(tagForLog, "Created credential: $credential")
 
+        keyPair.writeMetaDataStorage(credentialId, options)
+
         return credential
     }
 
@@ -140,8 +156,8 @@ class LocalContainer(
         credentialId: ByteArray,
         challenge: ByteArray,
         algorithmSpec: AlgorithmParameterSpec,
-    ): KeyGenParameterSpec {
-        return KeyGenParameterSpec
+    ): KeyGenParameterSpec =
+        KeyGenParameterSpec
             .Builder(
                 "$origin+${credentialId.toHexString()}",
                 PURPOSE_SIGN or PURPOSE_VERIFY,
@@ -155,9 +171,7 @@ class LocalContainer(
                 DIGEST_SHA512,
             ).setAttestationChallenge(
                 challenge,
-            ).setUserPresenceRequired(true)
-            .build()
-    }
+            ).build()
 
     private fun generateKeyPair(
         keyAlgorithm: String,
@@ -246,12 +260,12 @@ class LocalContainer(
 
         val authenticatorData =
             createAuthenticatorData(
-                rpId,
-                true,
-                requireUserVerification,
-                signatureCount,
-                attestedCredentialData,
-                null,
+                rpId = rpId,
+                userPresence = true,
+                userVerification = requireUserVerification,
+                signatureCounter = signatureCount,
+                attestedCredentialData = attestedCredentialData,
+                extensions = null,
             )
 
         val attestationObject =
@@ -288,13 +302,6 @@ class LocalContainer(
         attestedCredentialData: ByteArray?,
         extensions: ByteArray?,
     ): ByteArray {
-        val sha256 =
-            try {
-                MessageDigest.getInstance("SHA-256")
-            } catch (e: NoSuchAlgorithmException) {
-                throw RuntimeException("SHA-256 is not available", e)
-            }
-
         val rpIdHash = sha256.digest(rpId.toByteArray())
         val ed = extensions != null
         val at = attestedCredentialData != null
@@ -348,9 +355,9 @@ class LocalContainer(
 
     private fun getAlgorithmParams(alg: Int): Pair<AlgorithmParameterSpec, String> {
         return when (alg) {
-            -7 -> Pair(ECGenParameterSpec("secp256r1"), KEY_ALGORITHM_EC)
-            -35 -> Pair(ECGenParameterSpec("secp384r1"), KEY_ALGORITHM_EC)
-            -36 -> Pair(ECGenParameterSpec("secp521r1"), KEY_ALGORITHM_EC)
+            -7 -> ECGenParameterSpec("secp256r1") to KEY_ALGORITHM_EC
+            -35 -> ECGenParameterSpec("secp384r1") to KEY_ALGORITHM_EC
+            -36 -> ECGenParameterSpec("secp521r1") to KEY_ALGORITHM_EC
             else -> throw IllegalArgumentException("Unsupported algorithm: $alg")
         }
     }
@@ -376,29 +383,41 @@ class LocalContainer(
 
         // retrieve all credentials
         val selectedCredentials =
-            storage.aliases().toList().associate { alias ->
-                alias to storage.getEntry(alias, null)
+            secureStore.aliases().toList().associate { alias ->
+                alias to secureStore.getEntry(alias, null)
             }.toMutableMap()
 
         for (allowed in allowedCredentials) {
             val allowedId = allowed.getOrDefault("id", null) as? String ?: ""
             val alias = "$origin+$allowedId"
 
-            if (origin !in alias || !storage.containsAlias(alias)) {
+            if (origin !in alias || !secureStore.containsAlias(alias)) {
                 selectedCredentials[alias] = null
             }
         }
 
-        val finalSelection = selectedCredentials.filter { it.value != null }
+        // TODO REMOVE ME WITH A NEW INSTALL, OUTDATED CONVENTION FOUND
+        val finalSelection =
+            selectedCredentials.filter {
+                it.value != null &&
+                    it.key.startsWith(origin)
+            }
         if (finalSelection.isNotEmpty()) {
-            // TODO MULTIPLE MATCHES??
+            // TODO MULTIPLE MATCHES?? Show UI and let user select.
 
             val firstKey = finalSelection.keys.first()
-            val first = finalSelection[firstKey]!! as KeyStore.PrivateKeyEntry
-            val credentialResponse = first.toResponse(firstKey, challenge, rpId)
+            val first = finalSelection.getOrDefault(firstKey, null) as? KeyStore.PrivateKeyEntry
 
-            successCallback(
-                credentialResponse,
+            first?.let {
+                val credentialResponse = it.toResponse(firstKey, challenge, rpId)
+
+                YOLOLogger.i(tagForLog, "Credential found: $credentialResponse.")
+
+                successCallback(
+                    credentialResponse,
+                )
+            } ?: failureCallback(
+                IllegalStateException("Found broken key stored."),
             )
         } else {
             val ids =
@@ -434,8 +453,9 @@ class LocalContainer(
                 clientDataJson,
                 NO_PADDING or NO_WRAP or URL_SAFE,
             )
-        val clientDataJsonHash = MessageDigest.getInstance("SHA-256").digest(clientDataJson)
+        val clientDataJsonHash = sha256.digest(clientDataJson)
 
+        // TODO SAVE signCount IN META
         val authenticatorData =
             createAuthenticatorData(
                 rpId = rpId,
@@ -454,6 +474,11 @@ class LocalContainer(
                 sign()
             }
 
+        val meta = privateKey.readMetaDataStorage(credentialId)
+
+        val userDisplayName = meta.getNested("publicKey.user.displayName") as? String ?: ""
+        val userId = meta.getNested("publicKey.user.id") as? String ?: ""
+
         val response =
             JSONObject(
                 mapOf(
@@ -468,7 +493,12 @@ class LocalContainer(
                             signature,
                             NO_PADDING or NO_WRAP or URL_SAFE,
                         ),
-                    "userHandle" to null,
+                    "userHandle" to
+                        encodeToString(
+                            userId.toByteArray(),
+                            NO_PADDING or NO_WRAP or URL_SAFE,
+                        ),
+                    "userDisplayName" to userDisplayName,
                 ),
             )
 
@@ -491,6 +521,90 @@ class LocalContainer(
             ),
         )
     }
+
+    private fun KeyPair.writeMetaDataStorage(
+        credentialId: ByteArray,
+        options: JSONObject,
+    ) = try {
+        val input =
+            JSONObject(
+                options.toMap().toMutableMap().run {
+                    put("credentialId", credentialId)
+                    this
+                },
+            ).toString()
+
+        val key = private.deriveKeyFromKeyPair()
+
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, key, IvParameterSpec(createCipherIV()))
+
+        val output = cipher.doFinal(input.toByteArray())
+
+        val name = credentialId.credIdToFilename()
+        context.openFileOutput(name, Context.MODE_PRIVATE).use {
+            it.write(output)
+        }
+    } catch (th: Throwable) {
+        YOLOLogger.e(tagForLog, "Cant encrypt meta information.", th)
+    }
+
+    private fun PrivateKey.readMetaDataStorage(credentialId: ByteArray): JSONObject =
+        try {
+            val key = deriveKeyFromKeyPair()
+
+            val name = credentialId.credIdToFilename()
+            if (name !in context.fileList()) {
+                // TODO REPLACE WITH THROW
+//            throw IllegalStateException("File Not Found.")
+                JSONObject()
+            } else {
+                val bytes =
+                    context.openFileInput(name).use {
+                        it.readAllBytes()
+                    }
+
+                val decipher = Cipher.getInstance("AES/GCM/NoPadding")
+                decipher.init(Cipher.DECRYPT_MODE, key, IvParameterSpec(createCipherIV()))
+
+                val decoded = decipher.doFinal(bytes)
+                val json = JSONObject(String(decoded))
+
+                json
+            }
+        } catch (th: Throwable) {
+            YOLOLogger.e(tagForLog, "Cant encrypt meta information.", th)
+
+            JSONObject()
+        }
+
+    private fun ByteArray.credIdToFilename() =
+        sha256
+            .digest(
+                "AES+${toHexString()}"
+                    .toByteArray(),
+            )
+            .toHexString()
+}
+
+private fun PrivateKey.deriveKeyFromKeyPair(): SecretKeySpec {
+    val secret =
+        HKDF(
+            // algo =
+            "HmacSHA256",
+        ).digest(
+            // ikm =
+            encoded,
+            // salt =
+            createHkdfSalt(),
+            // info =
+            createHkdfInfo(),
+            // length =
+            32,
+        )
+
+    val key = SecretKeySpec(secret, "AES")
+    return key
 }
 
 private fun KeyPair.toCoseBytes(algorithm: Int): ByteArray =
@@ -517,6 +631,21 @@ private fun Map<Int, Any>.toCbor(): CBORObject {
             }
 
         result.set(key, typedValue)
+    }
+
+    return result
+}
+
+private fun createCipherIV(): ByteArray = ByteArray(32) { it.toByte() }
+
+private fun createHkdfSalt(): ByteArray = ByteArray(32)
+
+private fun createHkdfInfo(): ByteArray = "CTAP2 HMAC key".toByteArray(StandardCharsets.UTF_8)
+
+private operator fun ByteArray.times(count: Int): ByteArray {
+    var result = byteArrayOf()
+    repeat(count) {
+        result += this
     }
 
     return result
