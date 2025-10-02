@@ -131,17 +131,27 @@ class PasskeyProviderActivity : ComponentActivity() {
         localContainer.get(
             options = requestOptions,
             successCallback = { credentialJson ->
-                val result = Intent()
                 PendingIntentHandler.setGetCredentialResponse(
-                    result,
+                    intent,
                     GetCredentialResponse(
                         androidx.credentials.PublicKeyCredential(
                             credentialJson.toString(),
                         ),
                     ),
                 )
-                setResult(RESULT_OK, result)
-                finish()
+                setResult(RESULT_OK, intent)
+
+                lifecycleScope.launch(Dispatchers.Main) {
+                    delay(2000)
+
+                    Toast.makeText(
+                        this@PasskeyProviderActivity,
+                        "Passkey for user '${credentialJson.getNested("response.userDisplayName")}' returned 🎉.",
+                        Toast.LENGTH_LONG,
+                    ).show()
+
+                    finish()
+                }
             },
             failureCallback = {
                 val result = Intent()
@@ -188,14 +198,12 @@ class PasskeyProviderActivity : ComponentActivity() {
                     val createPublicKeyCredResponse =
                         CreatePublicKeyCredentialResponse(registrationResponseJson)
 
-                    val result = Intent()
-
                     PendingIntentHandler.setCreateCredentialResponse(
-                        result,
+                        intent,
                         createPublicKeyCredResponse,
                     )
 
-                    setResult(RESULT_OK, result)
+                    setResult(RESULT_OK, intent)
                     finish()
                 },
                 failureCallback = {
