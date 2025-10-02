@@ -40,7 +40,7 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
         cancellationSignal: CancellationSignal,
         callback: OutcomeReceiver<BeginCreateCredentialResponse, CreateCredentialException>,
     ) {
-        if (isNotFromUs(request.callingAppInfo?.packageName ?: "")) {
+        if (!request.isFromWwwallet()) {
             val queryJson =
                 request.candidateQueryData.getString(BUNDLE_KEY_REQUEST)
                     ?: ""
@@ -94,19 +94,24 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
         cancellationSignal: CancellationSignal,
         callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>,
     ) {
-        if (isNotFromUs(request.callingAppInfo?.packageName ?: "")) {
+        if (!request.isFromWwwallet()) {
             callback.onResult(
                 BeginGetCredentialResponse(
                     authenticationActions = createGetEntries(request),
                 ),
             )
         } else {
-            // tried to call the wwwallet provider from the wwwwallet
+            // tried to call the wwwallet provider from the wwwallet
             cancellationSignal.cancel()
         }
     }
 
-    private fun isNotFromUs(packageName: String) = !packageName.contains("wwwallet")
+    private fun Any.isFromWwwallet() =
+        when (this) {
+            is BeginGetCredentialRequest -> (callingAppInfo?.packageName ?: "").contains("wwwallet")
+            is BeginCreateCredentialRequest -> (callingAppInfo?.packageName ?: "").contains("wwwallet")
+            else -> true
+        }
 
     private fun createGetEntries(request: BeginGetCredentialRequest): List<AuthenticationAction> {
         val requestJson =
