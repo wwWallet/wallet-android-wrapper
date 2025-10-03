@@ -20,7 +20,6 @@ import android.util.Base64.encodeToString
 import com.upokecenter.cbor.CBORObject
 import io.yubicolabs.wwwwallet.BuildConfig
 import io.yubicolabs.wwwwallet.json.getNested
-import io.yubicolabs.wwwwallet.json.toList
 import io.yubicolabs.wwwwallet.json.toMap
 import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
@@ -93,11 +92,15 @@ class LocalContainer(
         val spec = buildKeyGenParameterSpec(credentialId, challenge, algorithmSpec)
         val keyPair = generateKeyPair(keyAlgorithm, spec)
 
+        val rpId =
+            options.getNested("publicKey.rp.id") as? String
+                ?: throw IllegalStateException("'publicKey.rp.id' on credential create options not set.")
+
         val clientDataJson =
             getClientOptions(
                 type = "webauthn.create",
                 challenge = challenge,
-                origin = origin,
+                origin = rpId,
             )
 
         val clientDataJsonB64 =
@@ -108,7 +111,7 @@ class LocalContainer(
 
         val (attestationObject, authenticatorData) =
             createAttestationObject(
-                rpId = options.getNested("publicKey.rp.id") as? String ?: "",
+                rpId = rpId,
                 credentialId = credentialId,
                 publicKey = keyPair.toCoseBytes(selectedAlgorithm),
                 // TODO: CHECK WITH OPTIONS
@@ -374,7 +377,7 @@ class LocalContainer(
             (options.getNested("publicKey.challenge") as? String)?.decodeBase64()?.toByteArray()
                 ?: byteArrayOf()
 
-        val rpId = options.getNested("publicKey.rpId") as? String ?: origin
+        val rpId = options.getNested("publicKey.rpId") as? String ?: ""
 
         // retrieve allowed or all credentials
         val selectedCredentials =
@@ -402,7 +405,6 @@ class LocalContainer(
                 }
             }
 
-        // TODO REMOVE ME WITH A NEW INSTALL, OUTDATED CONVENTION FOUND
         val finalSelection =
             selectedCredentials.filter {
                 it.value != null &&
@@ -457,7 +459,7 @@ class LocalContainer(
             getClientOptions(
                 type = "webauthn.get",
                 challenge = challenge,
-                origin = origin,
+                origin = rpId,
             )
         val clientDataJsonB64 =
             encodeToString(
@@ -477,11 +479,11 @@ class LocalContainer(
                 extensions = null,
             )
 
+        val toSign = authenticatorData + clientDataJsonHash
         val signature =
             Signature.getInstance("SHA256withECDSA").run {
                 initSign(privateKey)
-                update(authenticatorData)
-                update(clientDataJsonHash)
+                update(toSign)
                 sign()
             }
 
