@@ -1,7 +1,10 @@
+@file:OptIn(ExperimentalUuidApi::class)
+
 package io.yubicolabs.wwwwallet.credentials.provider
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
@@ -10,17 +13,26 @@ import androidx.annotation.RequiresApi
 import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.CreateCredentialException
 import androidx.credentials.exceptions.GetCredentialException
-import androidx.credentials.provider.AuthenticationAction
 import androidx.credentials.provider.BeginCreateCredentialRequest
 import androidx.credentials.provider.BeginCreateCredentialResponse
 import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.BeginGetCredentialResponse
+import androidx.credentials.provider.BeginGetPublicKeyCredentialOption
 import androidx.credentials.provider.CreateEntry
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
+import androidx.credentials.provider.PublicKeyCredentialEntry
 import io.yubicolabs.wwwwallet.R
+import io.yubicolabs.wwwwallet.credentials.LocalContainer
 import io.yubicolabs.wwwwallet.json.getNested
+import io.yubicolabs.wwwwallet.json.toList
 import io.yubicolabs.wwwwallet.logging.YOLOLogger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.json.JSONArray
 import org.json.JSONObject
+import java.util.concurrent.CountDownLatch
+import kotlin.uuid.ExperimentalUuidApi
 import androidx.credentials.provider.CredentialProviderService as AndroidCredentialProviderService
 
 const val CREATE_CLIENT_DEVICE_REQUEST_CODE: Int = 12341
@@ -28,13 +40,23 @@ const val GET_CLIENT_DEVICE_REQUEST_CODE: Int = 12345
 
 const val BUNDLE_KEY_REQUEST: String = "androidx.credentials.BUNDLE_KEY_REQUEST_JSON"
 
-const val EXTRA_KEY_USER_ID = "KEY_ACCOUNT_ID"
 const val EXTRA_KEY_REQUEST_CODE = "KEY_REQUEST_CODE"
 const val EXTRA_KEY_REQUEST_ID = "KEY_REQUEST_ID"
-const val EXTRA_KEY_REQUEST_OPTIONS = "KEY_REQUEST_OPTIONS"
+const val EXTRA_KEY_CREDENTIAL_ID = "KEY_CREDENTIAL_ID"
 
 @RequiresApi(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 open class CredentialProviderService() : AndroidCredentialProviderService() {
+    companion object {
+        private var runningNumberPendingIntentNumber: Int = 1
+    }
+
+    private lateinit var localContainer: LocalContainer
+
+    override fun onCreate() {
+        super.onCreate()
+        localContainer = LocalContainer(applicationContext)
+    }
+
     override fun onBeginCreateCredentialRequest(
         request: BeginCreateCredentialRequest,
         cancellationSignal: CancellationSignal,
@@ -46,7 +68,6 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
                     ?: ""
             val query = JSONObject(queryJson)
             val userId = query.getNested("user.id") as? String ?: ""
-            val requestId = query.getNested("requestId") as? String ?: ""
 
             callback.onResult(
                 BeginCreateCredentialResponse(
@@ -54,9 +75,7 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
                         listOf(
                             createCreateEntry(
                                 accountName = baseContext.getString(R.string.credential_provider_create_android_description),
-                                userId = userId,
                                 requestCode = CREATE_CLIENT_DEVICE_REQUEST_CODE,
-                                requestId = requestId,
                             ),
                         ),
                 ),
@@ -70,20 +89,16 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
     private fun createCreateEntry(
         accountName: String,
         requestCode: Int,
-        requestId: String,
-        userId: String,
     ): CreateEntry =
         CreateEntry(
             accountName = accountName,
             pendingIntent =
                 PendingIntent.getActivity(
-                    baseContext,
-                    requestCode,
-                    Intent(baseContext, PasskeyProviderActivity::class.java).also {
+                    applicationContext,
+                    runningNumberPendingIntentNumber++,
+                    Intent(applicationContext, PasskeyProviderActivity::class.java).also {
                         it.setPackage(PACKAGE_NAME)
                         it.putExtra(EXTRA_KEY_REQUEST_CODE, requestCode)
-                        it.putExtra(EXTRA_KEY_USER_ID, userId)
-                        it.putExtra(EXTRA_KEY_REQUEST_ID, requestId)
                     },
                     PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                 ),
@@ -97,7 +112,12 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
         if (!request.isFromWwwallet()) {
             callback.onResult(
                 BeginGetCredentialResponse(
-                    authenticationActions = createGetEntries(request),
+                    credentialEntries =
+                        createGetEntries(
+                            request.beginGetCredentialOptions.mapNotNull {
+                                it as? BeginGetPublicKeyCredentialOption
+                            },
+                        ),
                 ),
             )
         } else {
@@ -113,46 +133,90 @@ open class CredentialProviderService() : AndroidCredentialProviderService() {
             else -> true
         }
 
-    private fun createGetEntries(request: BeginGetCredentialRequest): List<AuthenticationAction> {
-        val requestJson =
-            request
-                .beginGetCredentialOptions
-                .first()
-                .candidateQueryData
-                .getString(BUNDLE_KEY_REQUEST)
-                ?: ""
+    private fun createGetEntries(requestOptions: List<BeginGetPublicKeyCredentialOption>): List<PublicKeyCredentialEntry> {
+        val responsesOrOption = getAllResponsesToOptions(requestOptions)
 
-        val requestId = request.beginGetCredentialOptions.first().id
+        val result = mutableListOf<PublicKeyCredentialEntry>()
+        var lastOption: BeginGetPublicKeyCredentialOption? = null
 
-        return listOf(
-            AuthenticationAction(
-                title = applicationContext.getString(R.string.credential_provider_create_android_description),
-                pendingIntent =
-                    createPendingIntentForGetRequest(
-                        GET_CLIENT_DEVICE_REQUEST_CODE,
-                        requestId,
-                        requestJson,
-                    ),
-            ),
-        )
+        responsesOrOption.forEach { item ->
+            when (item) {
+                is BeginGetPublicKeyCredentialOption -> lastOption = item
+
+                is Map<*, *> ->
+                    lastOption?.let { option ->
+                        result += getEntryFromResponses(option, item)
+                    }
+            }
+        }
+
+        return result
     }
 
-    private fun createPendingIntentForGetRequest(
-        requestCode: Int,
-        requestId: String,
-        credentialsJson: String,
-    ): PendingIntent =
-        PendingIntent.getActivity(
-            baseContext,
-            requestCode,
-            Intent(baseContext, PasskeyProviderActivity::class.java).also {
-                it.setPackage(PACKAGE_NAME)
-                it.putExtra(EXTRA_KEY_REQUEST_CODE, requestCode)
-                it.putExtra(EXTRA_KEY_REQUEST_ID, requestId)
-                it.putExtra(EXTRA_KEY_REQUEST_OPTIONS, credentialsJson)
-            },
-            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
+    private fun getEntryFromResponses(
+        option: BeginGetPublicKeyCredentialOption,
+        credential: Map<*, *>,
+    ): PublicKeyCredentialEntry {
+        val credentialId = credential.getNested("id") as? String ?: ""
+        val username = credential.getNested("response.userName") as? String ?: ""
+        val displayName = credential.getNested("response.userDisplayName") as? String ?: ""
+
+        val intent = Intent(applicationContext, PasskeyProviderActivity::class.java)
+        intent.putExtra(EXTRA_KEY_REQUEST_CODE, GET_CLIENT_DEVICE_REQUEST_CODE)
+        intent.putExtra(EXTRA_KEY_CREDENTIAL_ID, credentialId)
+
+        val pendingIntent =
+            PendingIntent.getActivity(
+                applicationContext,
+                (runningNumberPendingIntentNumber++),
+                intent,
+                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+
+        val icon = Icon.createWithResource(applicationContext, R.mipmap.ic_launcher)
+
+        return PublicKeyCredentialEntry.Builder(
+            context = applicationContext,
+            username = username,
+            pendingIntent = pendingIntent,
+            beginGetPublicKeyCredentialOption = option,
+        ).setIcon(
+            icon,
+        ).setDisplayName(
+            displayName,
+        ).build()
+    }
+
+    private fun getAllResponsesToOptions(requestOptions: List<BeginGetPublicKeyCredentialOption>): MutableList<Any?> {
+        val responsesOrOption = mutableListOf<Any?>()
+        val latch = CountDownLatch(1)
+
+        for (option in requestOptions) {
+            var response = JSONArray()
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val publicKeyOptions = JSONObject(mapOf("publicKey" to JSONObject(option.requestJson)))
+                localContainer.getAll(
+                    options = publicKeyOptions,
+                    successCallback = {
+                        response = it
+                        latch.countDown()
+                    },
+                    failureCallback = {
+                        response = JSONArray()
+                        latch.countDown()
+                    },
+                )
+            }
+            latch.await()
+
+            if (response.length() > 0) {
+                responsesOrOption.add(option)
+                responsesOrOption.addAll(response.toList())
+            }
+        }
+        return responsesOrOption
+    }
 
     override fun onClearCredentialStateRequest(
         request: ProviderClearCredentialStateRequest,

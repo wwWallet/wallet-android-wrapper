@@ -362,18 +362,13 @@ class LocalContainer(
         }
     }
 
-    override fun get(
+    fun getAll(
         options: JSONObject,
-        successCallback: (JSONObject) -> Unit,
+        successCallback: (JSONArray) -> Unit,
         failureCallback: (Throwable) -> Unit,
     ) = try {
-        val allowedCredentials: List<Map<String, Any?>> =
-            (
-                (options.getNested("publicKey.allowCredentials") as? JSONArray)?.toList()
-                    ?: listOf()
-            ).mapNotNull {
-                (it as? JSONObject)?.toMap()
-            }
+        val allowedCredentials: List<Map<*, *>> =
+            (options.getNested("publicKey.allowCredentials") as? List<Map<*, *>>) ?: listOf<Map<*, *>>()
 
         val challenge =
             (options.getNested("publicKey.challenge") as? String)?.decodeBase64()?.toByteArray()
@@ -381,20 +376,31 @@ class LocalContainer(
 
         val rpId = options.getNested("publicKey.rpId") as? String ?: origin
 
-        // retrieve all credentials
+        // retrieve allowed or all credentials
         val selectedCredentials =
-            secureStore.aliases().toList().associate { alias ->
-                alias to secureStore.getEntry(alias, null)
-            }.toMutableMap()
+            if (allowedCredentials.isNotEmpty()) {
+                allowedCredentials.mapNotNull { allowed ->
+                    val type = allowed.getOrDefault("type", null) as? String ?: ""
+                    if (type != "public-key") {
+                        YOLOLogger.e(tagForLog, "Found non 'public-key' credential id in allow list.")
+                    }
 
-        for (allowed in allowedCredentials) {
-            val allowedId = allowed.getOrDefault("id", null) as? String ?: ""
-            val alias = "$origin+$allowedId"
+                    val allowedIdB64 = allowed.getOrDefault("id", null) as? String ?: ""
+                    val allowedIdRaw = allowedIdB64.decodeBase64()
+                    val allowedId = allowedIdRaw?.hex() ?: ""
+                    val alias = "$origin+$allowedId"
 
-            if (origin !in alias || !secureStore.containsAlias(alias)) {
-                selectedCredentials[alias] = null
+                    if (secureStore.containsAlias(alias)) {
+                        alias to secureStore.getEntry(alias, null)
+                    } else {
+                        null
+                    }
+                }.associate { it }
+            } else {
+                secureStore.aliases().toList().associate { key ->
+                    key to secureStore.getEntry(key, null)
+                }
             }
-        }
 
         // TODO REMOVE ME WITH A NEW INSTALL, OUTDATED CONVENTION FOUND
         val finalSelection =
@@ -402,35 +408,40 @@ class LocalContainer(
                 it.value != null &&
                     it.key.startsWith(origin)
             }
-        if (finalSelection.isNotEmpty()) {
-            // TODO MULTIPLE MATCHES?? Show UI and let user select.
 
-            val firstKey = finalSelection.keys.first()
-            val first = finalSelection.getOrDefault(firstKey, null) as? KeyStore.PrivateKeyEntry
+        val credentials =
+            finalSelection.mapNotNull { selectionEntry ->
+                val (key, keyEntry) = selectionEntry
+                (keyEntry as? KeyStore.PrivateKeyEntry)
+                    ?.toResponse(key, challenge, rpId)
+            }
 
-            first?.let {
-                val credentialResponse = it.toResponse(firstKey, challenge, rpId)
-
-                YOLOLogger.i(tagForLog, "Credential found: $credentialResponse.")
-
-                successCallback(
-                    credentialResponse,
-                )
-            } ?: failureCallback(
-                IllegalStateException("Found broken key stored."),
-            )
-        } else {
-            val ids =
-                allowedCredentials
-                    .joinToString(separator = ",") {
-                        (it as? JSONObject)?.get("id") as? String ?: "null"
-                    }
-
-            failureCallback(
-                NoSuchElementException("No credential with id in [$ids] found in credential storage."),
-            )
-        }
+        successCallback(
+            JSONArray(credentials),
+        )
     } catch (th: Throwable) {
+        YOLOLogger.e(tagForLog, "Couldn't return all credentials.", th)
+        failureCallback(th)
+    }
+
+    override fun get(
+        options: JSONObject,
+        successCallback: (JSONObject) -> Unit,
+        failureCallback: (Throwable) -> Unit,
+    ) = try {
+        getAll(
+            options = options,
+            successCallback = { jsonArray ->
+                if (jsonArray.length() > 0) {
+                    successCallback(jsonArray.getJSONObject(0))
+                } else {
+                    failureCallback(IllegalStateException("Not one credential found."))
+                }
+            },
+            failureCallback = failureCallback,
+        )
+    } catch (th: Throwable) {
+        YOLOLogger.e(tagForLog, "Couldn't return credential.", th)
         failureCallback(th)
     }
 
@@ -476,6 +487,7 @@ class LocalContainer(
 
         val meta = privateKey.readMetaDataStorage(credentialId)
 
+        val userName = meta.getNested("publicKey.user.name") as? String ?: ""
         val userDisplayName = meta.getNested("publicKey.user.displayName") as? String ?: ""
         val userId = meta.getNested("publicKey.user.id") as? String ?: ""
 
@@ -498,6 +510,7 @@ class LocalContainer(
                             userId.toByteArray(),
                             NO_PADDING or NO_WRAP or URL_SAFE,
                         ),
+                    "userName" to userName,
                     "userDisplayName" to userDisplayName,
                 ),
             )
@@ -555,9 +568,7 @@ class LocalContainer(
 
             val name = credentialId.credIdToFilename()
             if (name !in context.fileList()) {
-                // TODO REPLACE WITH THROW
-//            throw IllegalStateException("File Not Found.")
-                JSONObject()
+                throw IllegalStateException("File Not Found.")
             } else {
                 val bytes =
                     context.openFileInput(name).use {
@@ -650,3 +661,5 @@ private operator fun ByteArray.times(count: Int): ByteArray {
 
     return result
 }
+
+private fun String.fullyQualified(): String = if (startsWith("https://")) this else "https://$this"

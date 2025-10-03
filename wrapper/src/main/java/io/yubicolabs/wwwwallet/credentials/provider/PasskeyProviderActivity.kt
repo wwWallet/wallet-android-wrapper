@@ -27,24 +27,23 @@ import androidx.compose.ui.unit.dp
 import androidx.credentials.CreatePublicKeyCredentialRequest
 import androidx.credentials.CreatePublicKeyCredentialResponse
 import androidx.credentials.GetCredentialResponse
+import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.exceptions.CreateCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialUnknownException
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.lifecycleScope
 import io.yubicolabs.wwwwallet.R
-import io.yubicolabs.wwwwallet.credentials.Container
 import io.yubicolabs.wwwwallet.credentials.LocalContainer
 import io.yubicolabs.wwwwallet.json.getNested
 import io.yubicolabs.wwwwallet.logging.YOLOLogger
 import io.yubicolabs.wwwwallet.tagForLog
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import kotlin.uuid.ExperimentalUuidApi
 
 class PasskeyProviderActivity : ComponentActivity() {
-    lateinit var localContainer: Container
+    lateinit var localContainer: LocalContainer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,62 +95,71 @@ class PasskeyProviderActivity : ComponentActivity() {
 
     private fun handleActivityForResult() {
         val requestCode = intent.getIntExtra(EXTRA_KEY_REQUEST_CODE, 0)
-        val requestId = intent.getStringExtra(EXTRA_KEY_REQUEST_ID)
-
         when (requestCode) {
-            CREATE_CLIENT_DEVICE_REQUEST_CODE -> createRequest(requestCode)
-            GET_CLIENT_DEVICE_REQUEST_CODE -> getRequest(requestCode)
+            CREATE_CLIENT_DEVICE_REQUEST_CODE -> createRequest()
+            GET_CLIENT_DEVICE_REQUEST_CODE -> getRequest()
 
             else -> {
                 Toast.makeText(
                     applicationContext,
-                    "Found unexpected request ID: 0x${String.format("%04X", requestId)}. ",
+                    "Found unexpected request.",
                     Toast.LENGTH_SHORT,
                 ).show()
 
-                YOLOLogger.e(tagForLog, "Could not identify request id $requestId. Ignored.")
+                YOLOLogger.e(tagForLog, "Could not identify request. Ignored.")
                 finish()
             }
         }
     }
 
-    private fun getRequest(requestCode: Int) {
-        if (requestCode != GET_CLIENT_DEVICE_REQUEST_CODE) {
+    private fun getRequest() {
+        val request = PendingIntentHandler.retrieveProviderGetCredentialRequest(intent)
+        if (request == null) {
+            return
+        }
+        val credentialId = intent.getStringExtra(EXTRA_KEY_CREDENTIAL_ID)
+        YOLOLogger.d(tagForLog, "Get credential request found.")
+
+        val publicKeyRequest = request.credentialOptions.firstOrNull() as? GetPublicKeyCredentialOption
+        if (publicKeyRequest == null) {
             return
         }
 
-        YOLOLogger.d(tagForLog, "Get credential request found.")
-
-        val publicKeyRequest = intent.getStringExtra(EXTRA_KEY_REQUEST_OPTIONS) ?: ""
+        val publicKeyRequestJson = JSONObject(publicKeyRequest.requestJson)
+        publicKeyRequestJson.getJSONArray("allowCredentials").put(
+            JSONObject(
+                mapOf("type" to "public-key", "id" to credentialId),
+            ),
+        )
         val requestOptions =
             JSONObject(
-                mutableMapOf("publicKey" to JSONObject(publicKeyRequest)),
+                mapOf(
+                    "publicKey" to publicKeyRequestJson,
+                ),
             )
 
         localContainer.get(
             options = requestOptions,
             successCallback = { credentialJson ->
+                val result = Intent()
+
                 PendingIntentHandler.setGetCredentialResponse(
-                    intent,
+                    result,
                     GetCredentialResponse(
                         androidx.credentials.PublicKeyCredential(
                             credentialJson.toString(),
                         ),
                     ),
                 )
-                setResult(RESULT_OK, intent)
+                setResult(RESULT_OK, result)
 
-                lifecycleScope.launch(Dispatchers.Main) {
-                    delay(2000)
+                Toast.makeText(
+                    this,
+                    "Passkey for user '${credentialJson.getNested("response.userDisplayName")}' returned 🎉.",
+                    Toast.LENGTH_LONG,
+                ).show()
 
-                    Toast.makeText(
-                        this@PasskeyProviderActivity,
-                        "Passkey for user '${credentialJson.getNested("response.userDisplayName")}' returned 🎉.",
-                        Toast.LENGTH_LONG,
-                    ).show()
-
-                    finish()
-                }
+                finish()
             },
             failureCallback = {
                 val result = Intent()
@@ -177,7 +185,7 @@ class PasskeyProviderActivity : ComponentActivity() {
         )
     }
 
-    fun createRequest(requestCode: Int) {
+    fun createRequest() {
         val request =
             PendingIntentHandler.retrieveProviderCreateCredentialRequest(intent)
 
@@ -198,12 +206,13 @@ class PasskeyProviderActivity : ComponentActivity() {
                     val createPublicKeyCredResponse =
                         CreatePublicKeyCredentialResponse(registrationResponseJson)
 
+                    val result = Intent()
                     PendingIntentHandler.setCreateCredentialResponse(
-                        intent,
+                        result,
                         createPublicKeyCredResponse,
                     )
 
-                    setResult(RESULT_OK, intent)
+                    setResult(RESULT_OK, result)
                     finish()
                 },
                 failureCallback = {
