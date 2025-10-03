@@ -631,24 +631,6 @@ private fun KeyPair.toCoseBytes(algorithm: Int): ByteArray =
         byteArrayOf()
     }
 
-private fun Map<Int, Any>.toCbor(): CBORObject {
-    val result = CBORObject.NewMap()
-
-    forEach {
-        val (key, value) = it
-        val typedValue =
-            when (value) {
-                is Int -> CBORObject.FromObject(value)
-                is ByteArray -> CBORObject.FromObject(value)
-                else -> throw RuntimeException("Type '${value.javaClass.simpleName}' did not map to any registered cbor types.")
-            }
-
-        result.set(key, typedValue)
-    }
-
-    return result
-}
-
 private fun createCipherIV(): ByteArray = ByteArray(32) { it.toByte() }
 
 private fun createHkdfSalt(): ByteArray = ByteArray(32)
