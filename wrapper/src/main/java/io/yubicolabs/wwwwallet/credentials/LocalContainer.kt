@@ -242,14 +242,7 @@ class LocalContainer(
         challenge: ByteArray,
         origin: String,
     ): ByteArray {
-        return JSONObject(
-            mapOf(
-                "type" to type,
-                "challenge" to encodeToString(challenge, NO_PADDING or NO_WRAP or URL_SAFE),
-                "origin" to origin,
-                "crossOrigin" to false,
-            ),
-        ).toString().toByteArray()
+        return """{"type":"$type","challenge":"${encodeToString(challenge, NO_PADDING or NO_WRAP or URL_SAFE)}","origin":"${origin.fullyQualified()}","crossOrigin":false}""".toByteArray()
     }
 
     private fun createAttestationObject(
@@ -646,4 +639,4 @@ private operator fun ByteArray.times(count: Int): ByteArray {
     return result
 }
 
-private fun String.fullyQualified(): String = if (startsWith("https://")) this else "https://$this"
+private fun String.fullyQualified(): String = if (startsWith("https://")) this else """https://$this"""
