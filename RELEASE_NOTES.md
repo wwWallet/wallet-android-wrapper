@@ -1,3 +1,11 @@
+# 0.1.2
+
+* hotterfix: use signing extension sdk
+
+# 0.1.1
+
+* hotfix: add signing extension sdk
+
 # 0.1.0
 
 * passkeys provider
