@@ -91,6 +91,12 @@ function overrideNavigatorCredentialsWithBridgeCall(method) {
             options.publicKey.user.id = __encode(options.publicKey.user.id)
         }
 
+        if (options.publicKey.hasOwnProperty('excludeCredentials')) {
+            var excluded = options.publicKey.excludeCredentials
+            for(var i = 0; i < excluded.length; ++i) {
+                excluded[i].id = __encode(excluded[i].id);
+            }
+        }
         if (options.publicKey.hasOwnProperty('allowCredentials')) {
             var allowed = options.publicKey.allowCredentials
             for(var i = 0; i < allowed.length; ++i) {
