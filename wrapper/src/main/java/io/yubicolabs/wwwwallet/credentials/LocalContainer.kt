@@ -70,44 +70,37 @@ class LocalContainer(
         options: JSONObject,
         successCallback: (JSONObject) -> Unit,
         failureCallback: (Throwable) -> Unit,
+    ) = create(options, null, successCallback, failureCallback)
+
+    fun create(
+        options: JSONObject,
+        clientDataJsonHash: ByteArray?,
+        successCallback: (JSONObject) -> Unit,
+        failureCallback: (Throwable) -> Unit,
     ) = try {
-        val credential = createCredential(options)
+        val credential = createCredential(options, clientDataJsonHash)
         successCallback(credential)
     } catch (th: Throwable) {
         YOLOLogger.e(tagForLog, "Cannot create credential.", th)
         failureCallback(th)
     }
 
-    private fun createCredential(options: JSONObject): JSONObject {
+    private fun createCredential(
+        options: JSONObject,
+        clientDataHash: ByteArray?,
+    ): JSONObject {
         val selectedAlgorithm = selectAlgorithm(options)
         val (algorithmSpec, keyAlgorithm) = getAlgorithmParams(selectedAlgorithm)
 
         val credentialId = ByteArray(32)
         SecureRandom().nextBytes(credentialId)
 
-        val challenge =
-            (options.getNested("publicKey.challenge") as? String)?.decodeBase64()?.toByteArray()
-                ?: byteArrayOf()
-
-        val spec = buildKeyGenParameterSpec(credentialId, challenge, algorithmSpec)
+        val spec = buildKeyGenParameterSpec(credentialId, algorithmSpec)
         val keyPair = generateKeyPair(keyAlgorithm, spec)
 
         val rpId =
             options.getNested("publicKey.rp.id") as? String
                 ?: throw IllegalStateException("'publicKey.rp.id' on credential create options not set.")
-
-        val clientDataJson =
-            getClientOptions(
-                type = "webauthn.create",
-                challenge = challenge,
-                origin = rpId,
-            )
-
-        val clientDataJsonB64 =
-            encodeToString(
-                clientDataJson,
-                NO_PADDING or NO_WRAP or URL_SAFE,
-            )
 
         val (attestationObject, authenticatorData) =
             createAttestationObject(
@@ -120,10 +113,14 @@ class LocalContainer(
                 signatureCount = 0,
             )
 
+        val challenge =
+            (options.getNested("publicKey.challenge") as? String)?.decodeBase64()?.toByteArray()
+                ?: throw (IllegalStateException("Challenge not present."))
+
         val credential =
             createPublicKeyCredential(
                 credentialId,
-                clientDataJsonB64,
+                clientDataHash ?: getClientOptions(type = "webauthn.create", challenge = challenge, origin = rpId),
                 attestationObject,
                 authenticatorData,
                 selectedAlgorithm,
@@ -135,6 +132,35 @@ class LocalContainer(
         keyPair.writeMetaDataStorage(credentialId, options)
 
         return credential
+    }
+
+    fun delete(
+        credentialId: String,
+        successCallback: () -> Unit,
+        failureCallback: (Throwable) -> Unit,
+    ) = try {
+        val byteId = credentialId.decodeBase64()?.toByteArray() ?: byteArrayOf()
+        val alias = "$origin+${byteId.toHexString()}"
+        val filename = byteId.credIdToFilename()
+
+        if (secureStore.containsAlias(alias)) {
+            secureStore.deleteEntry(alias)
+        } else {
+            failureCallback(IllegalStateException("Credential alias nor found."))
+        }
+
+        if (filename !in context.fileList()) {
+            // no delete necessary
+            failureCallback(IllegalStateException("File $filename not found."))
+        } else {
+            if (context.deleteFile(filename)) {
+                successCallback()
+            } else {
+                failureCallback(RuntimeException("Failed to delete $filename file."))
+            }
+        }
+    } catch (th: Throwable) {
+        failureCallback(th)
     }
 
     private fun selectAlgorithm(options: JSONObject): Int {
@@ -157,23 +183,19 @@ class LocalContainer(
 
     private fun buildKeyGenParameterSpec(
         credentialId: ByteArray,
-        challenge: ByteArray,
         algorithmSpec: AlgorithmParameterSpec,
     ): KeyGenParameterSpec =
         KeyGenParameterSpec
             .Builder(
                 "$origin+${credentialId.toHexString()}",
                 PURPOSE_SIGN or PURPOSE_VERIFY,
-            )
-            .setAlgorithmParameterSpec(algorithmSpec)
+            ).setAlgorithmParameterSpec(algorithmSpec)
             .setIsStrongBoxBacked(
                 isStrongBoxed,
             ).setDigests(
                 DIGEST_SHA256,
                 DIGEST_SHA384,
                 DIGEST_SHA512,
-            ).setAttestationChallenge(
-                challenge,
             ).build()
 
     private fun generateKeyPair(
@@ -191,7 +213,7 @@ class LocalContainer(
 
     private fun createPublicKeyCredential(
         credentialId: ByteArray,
-        clientDataJsonB64: String,
+        clientDataHash: ByteArray,
         attestationObject: String,
         authenticatorData: ByteArray,
         publicKeyAlgorithm: Int,
@@ -200,7 +222,11 @@ class LocalContainer(
         val response =
             JSONObject(
                 mapOf(
-                    "clientDataJSON" to clientDataJsonB64,
+                    "clientDataJSON" to
+                        encodeToString(
+                            clientDataHash,
+                            NO_PADDING or NO_WRAP or URL_SAFE,
+                        ),
                     "attestationObject" to attestationObject,
                     "authenticatorData" to
                         encodeToString(
@@ -241,9 +267,13 @@ class LocalContainer(
         type: String,
         challenge: ByteArray,
         origin: String,
-    ): ByteArray {
-        return """{"type":"$type","challenge":"${encodeToString(challenge, NO_PADDING or NO_WRAP or URL_SAFE)}","origin":"${origin.fullyQualified()}","crossOrigin":false}""".toByteArray()
-    }
+    ): ByteArray =
+        """{"type":"$type","challenge":"${
+            encodeToString(
+                challenge,
+                NO_PADDING or NO_WRAP or URL_SAFE,
+            )
+        }","origin":"${origin.fullyQualified()}","crossOrigin":false}""".toByteArray()
 
     private fun createAttestationObject(
         rpId: String,
@@ -266,7 +296,8 @@ class LocalContainer(
 
         val attestationObject =
             encodeToString(
-                CBORObject.NewMap()
+                CBORObject
+                    .NewMap()
                     .Add("fmt", "none")
                     .Add("attStmt", CBORObject.NewMap())
                     .Add("authData", authenticatorData)
@@ -281,7 +312,8 @@ class LocalContainer(
         cosePublicKey: ByteArray,
     ): ByteArray {
         val attestedCredentialDataLength = 16 + 2 + credentialId.size + cosePublicKey.size
-        return ByteBuffer.allocate(attestedCredentialDataLength)
+        return ByteBuffer
+            .allocate(attestedCredentialDataLength)
             .order(ByteOrder.BIG_ENDIAN)
             .put(aaguid.toByteArray(), 0, 16)
             .putShort(credentialId.size.toShort())
@@ -309,7 +341,8 @@ class LocalContainer(
                     ?: 0
             ) + (extensions?.size ?: 0)
         val authenticatorData =
-            ByteBuffer.allocate(authenticatorDataLength)
+            ByteBuffer
+                .allocate(authenticatorDataLength)
                 .order(ByteOrder.BIG_ENDIAN)
                 .put(rpIdHash, 0, 32)
                 .put(flags)
@@ -345,53 +378,57 @@ class LocalContainer(
         return flags.toByte()
     }
 
-    private fun isAlgorithmSupported(alg: Int): Boolean {
-        return alg in listOf(-7, -257, -35, -36)
-    }
+    private fun isAlgorithmSupported(alg: Int): Boolean = alg in listOf(-7, -257, -35, -36)
 
-    private fun getAlgorithmParams(alg: Int): Pair<AlgorithmParameterSpec, String> {
-        return when (alg) {
+    private fun getAlgorithmParams(alg: Int): Pair<AlgorithmParameterSpec, String> =
+        when (alg) {
             -7 -> ECGenParameterSpec("secp256r1") to KEY_ALGORITHM_EC
             -35 -> ECGenParameterSpec("secp384r1") to KEY_ALGORITHM_EC
             -36 -> ECGenParameterSpec("secp521r1") to KEY_ALGORITHM_EC
             else -> throw IllegalArgumentException("Unsupported algorithm: $alg")
         }
-    }
 
     fun getAll(
         options: JSONObject,
+        maybeClientDataJsonHash: ByteArray? = null,
         successCallback: (JSONArray) -> Unit,
         failureCallback: (Throwable) -> Unit,
     ) = try {
+        YOLOLogger.i("found credentials", "get options: ${options.toString(2)}")
+
         val allowedCredentials: List<Map<*, *>> =
             (options.getNested("publicKey.allowCredentials") as? List<Map<*, *>>) ?: listOf<Map<*, *>>()
+
+        val rpId = options.getNested("publicKey.rpId") as? String ?: ""
 
         val challenge =
             (options.getNested("publicKey.challenge") as? String)?.decodeBase64()?.toByteArray()
                 ?: byteArrayOf()
 
-        val rpId = options.getNested("publicKey.rpId") as? String ?: ""
+        val clientDataJsonHash =
+            maybeClientDataJsonHash ?: getClientOptions(type = "webauthn.get", challenge = challenge, origin = rpId)
 
         // retrieve allowed or all credentials
         val selectedCredentials =
             if (allowedCredentials.isNotEmpty()) {
-                allowedCredentials.mapNotNull { allowed ->
-                    val type = allowed.getOrDefault("type", null) as? String ?: ""
-                    if (type != "public-key") {
-                        YOLOLogger.e(tagForLog, "Found non 'public-key' credential id in allow list.")
-                    }
+                allowedCredentials
+                    .mapNotNull { allowed ->
+                        val type = allowed.getOrDefault("type", null) as? String ?: ""
+                        if (type != "public-key") {
+                            YOLOLogger.e(tagForLog, "Found non 'public-key' credential id in allow list.")
+                        }
 
-                    val allowedIdB64 = allowed.getOrDefault("id", null) as? String ?: ""
-                    val allowedIdRaw = allowedIdB64.decodeBase64()
-                    val allowedId = allowedIdRaw?.hex() ?: ""
-                    val alias = "$origin+$allowedId"
+                        val allowedIdB64 = allowed.getOrDefault("id", null) as? String ?: ""
+                        val allowedIdRaw = allowedIdB64.decodeBase64()
+                        val allowedId = allowedIdRaw?.hex() ?: ""
+                        val alias = "$origin+$allowedId"
 
-                    if (secureStore.containsAlias(alias)) {
-                        alias to secureStore.getEntry(alias, null)
-                    } else {
-                        null
-                    }
-                }.associate { it }
+                        if (secureStore.containsAlias(alias)) {
+                            alias to secureStore.getEntry(alias, null)
+                        } else {
+                            null
+                        }
+                    }.associate { it }
             } else {
                 secureStore.aliases().toList().associate { key ->
                     key to secureStore.getEntry(key, null)
@@ -408,11 +445,18 @@ class LocalContainer(
             finalSelection.mapNotNull { selectionEntry ->
                 val (key, keyEntry) = selectionEntry
                 (keyEntry as? KeyStore.PrivateKeyEntry)
-                    ?.toResponse(key, challenge, rpId)
+                    ?.toResponse(
+                        id = key,
+                        clientDataJson = clientDataJsonHash,
+                        rpId = rpId,
+                    )
             }
 
+        val credentialsJson = JSONArray(credentials)
+        val msg = credentialsJson.toString(2)
+        YOLOLogger.i("Found credentials", "get response: $msg")
         successCallback(
-            JSONArray(credentials),
+            credentialsJson,
         )
     } catch (th: Throwable) {
         YOLOLogger.e(tagForLog, "Couldn't return all credentials.", th)
@@ -423,9 +467,17 @@ class LocalContainer(
         options: JSONObject,
         successCallback: (JSONObject) -> Unit,
         failureCallback: (Throwable) -> Unit,
+    ) = get(options, null, successCallback, failureCallback)
+
+    fun get(
+        options: JSONObject,
+        clientDataJsonHash: ByteArray?,
+        successCallback: (JSONObject) -> Unit,
+        failureCallback: (Throwable) -> Unit,
     ) = try {
         getAll(
             options = options,
+            maybeClientDataJsonHash = clientDataJsonHash,
             successCallback = { jsonArray ->
                 if (jsonArray.length() > 0) {
                     successCallback(jsonArray.getJSONObject(0))
@@ -442,18 +494,12 @@ class LocalContainer(
 
     private fun KeyStore.PrivateKeyEntry.toResponse(
         id: String,
-        challenge: ByteArray,
+        clientDataJson: ByteArray,
         rpId: String,
     ): JSONObject {
         val credentialId =
             id.replace("$origin+", "").hexToByteArray()
 
-        val clientDataJson =
-            getClientOptions(
-                type = "webauthn.get",
-                challenge = challenge,
-                origin = rpId,
-            )
         val clientDataJsonB64 =
             encodeToString(
                 clientDataJson,
@@ -500,11 +546,7 @@ class LocalContainer(
                             signature,
                             NO_PADDING or NO_WRAP or URL_SAFE,
                         ),
-                    "userHandle" to
-                        encodeToString(
-                            userId.toByteArray(),
-                            NO_PADDING or NO_WRAP or URL_SAFE,
-                        ),
+                    "userHandle" to userId,
                     "userName" to userName,
                     "userDisplayName" to userDisplayName,
                 ),
@@ -589,8 +631,7 @@ class LocalContainer(
             .digest(
                 "AES+${toHexString()}"
                     .toByteArray(),
-            )
-            .toHexString()
+            ).toHexString()
 }
 
 private fun PrivateKey.deriveKeyFromKeyPair(): SecretKeySpec {
