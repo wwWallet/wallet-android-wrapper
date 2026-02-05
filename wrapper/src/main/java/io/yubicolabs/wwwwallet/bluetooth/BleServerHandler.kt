@@ -291,7 +291,7 @@ class BleServerHandler(
                 preparedWrite: Boolean,
                 responseNeeded: Boolean,
                 offset: Int,
-                payload: ByteArray?,
+                value: ByteArray?,
             ) {
                 super.onCharacteristicWriteRequest(
                     device,
@@ -300,20 +300,20 @@ class BleServerHandler(
                     preparedWrite,
                     responseNeeded,
                     offset,
-                    payload,
+                    value,
                 )
 
                 state.let {
                     if (it is Connected) {
                         val writeState =
-                            if (payload != null) {
+                            if (value != null) {
                                 when (characteristic?.uuid) {
                                     ServiceCharacteristic.ClientToServer.uuid -> {
                                         // registered characteristic found, report back
                                         val msg =
-                                            "Received $payload (${payload.toHumanReadable()}, ${
+                                            "Received $value (${value.toHumanReadable()}, ${
                                                 String(
-                                                    payload,
+                                                    value,
                                                 )
                                             }) from ${characteristic.uuid}"
                                         YOLOLogger.d(tagForLog, msg)
@@ -322,12 +322,12 @@ class BleServerHandler(
                                             device!!,
                                             characteristic,
                                             false,
-                                            payload,
+                                            value,
                                         )
 
                                         // check if server wanted to see what client wrote.
                                         if (it.readCallback != null) {
-                                            it.readCallback(payload)
+                                            it.readCallback(value)
                                             state = it.copy(readCallback = null)
                                         }
 
@@ -357,7 +357,7 @@ class BleServerHandler(
                                 requestId,
                                 writeState,
                                 offset,
-                                payload,
+                                value,
                             )
                         }
                     } else {

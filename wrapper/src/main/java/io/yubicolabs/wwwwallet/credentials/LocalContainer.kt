@@ -396,8 +396,9 @@ class LocalContainer(
     ) = try {
         YOLOLogger.i("found credentials", "get options: ${options.toString(2)}")
 
-        val allowedCredentials: List<Map<*, *>> =
-            (options.getNested("publicKey.allowCredentials") as? List<Map<*, *>>) ?: listOf<Map<*, *>>()
+        @Suppress("UNCHECKED_CAST")
+        val allowedCredentials =
+            (options.getNested("publicKey.allowCredentials") as? List<Map<*, *>>) ?: listOf()
 
         val rpId = options.getNested("publicKey.rpId") as? String ?: ""
 
