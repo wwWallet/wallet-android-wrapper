@@ -1,9 +1,9 @@
 package build
 
-import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.process.ExecResult
+import org.gradle.process.ExecOperations
+import org.gradle.kotlin.dsl.support.serviceOf
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Base64
@@ -28,16 +28,17 @@ fun Project.fileFromEnv(project: Project, envName: String, fileName: String): Fi
 }
 
 fun Project.runCommand(command: String): String {
+    val execOperations = project.serviceOf<ExecOperations>()
     val output = ByteArrayOutputStream()
 
-    val result: ExecResult? = exec(Action {
+    val result = execOperations.exec {
         commandLine = listOf("sh", "-c", command)
         standardOutput = output
-    }).assertNormalExitValue()
+    }.assertNormalExitValue()
 
-    if (result?.exitValue == 0) {
+    if (result.exitValue == 0) {
         return output.toString().lines().filter { it.isNotBlank() }.joinToString("\n")
     }
 
-    throw IllegalStateException("Command '${command}' return exit value: ${result?.exitValue}.")
+    throw IllegalStateException("Command '${command}' return exit value: ${result.exitValue}.")
 }
