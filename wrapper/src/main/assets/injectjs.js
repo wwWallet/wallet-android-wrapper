@@ -9,6 +9,10 @@
 // check if replaced in Android: if not defined, throws an 'ReferenceError'.
 JAVASCRIPT_BRIDGE
 
+// Inject CSS class as early as possible to indicate to the web app, it's
+// running inside the wrapper.
+document.getElementsByTagName("html")[0].classList.add("is-wrapper-app");
+
 // optionally replaced in android: if not defined no visualization
 visualize = (typeof JAVASCRIPT_VISUALIZE_INJECTION) !== 'undefined' ? JAVASCRIPT_VISUALIZE_INJECTION : false
 
