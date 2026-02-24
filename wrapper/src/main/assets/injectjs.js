@@ -73,92 +73,115 @@ JAVASCRIPT_BRIDGE.overrideHints = function(newHints) {
 
 // override functions on navigator
 function overrideNavigatorCredentialsWithBridgeCall(method) {
+
+    JAVASCRIPT_BRIDGE[method + "Wrapped"] = navigator.credentials[method].bind(navigator.credentials);
+
     navigator.credentials[method] = (options) => {
-      var uuid = crypto.randomUUID()
+        console.log("Executing " + method + " with request: ", options);
 
-      var promise = new Promise((resolve, reject) => {
-        JAVASCRIPT_BRIDGE.__promise_cache__[uuid] = {'resolve':resolve, 'reject':reject, 'method': method}
+        if (
+            !("publicKey" in options)
+            || !("hints" in options.publicKey)
+            || !Array.isArray(options.publicKey.hints)
+            || !options.publicKey.hints.includes("security-key")
+        ) {
+            console.log("Forward to OS, because no security-key hint contained.")
 
-        if (JAVASCRIPT_BRIDGE.__override_hints.length > 0) {
-            options.publicKey['hints'] = JAVASCRIPT_BRIDGE.__override_hints
+            return JAVASCRIPT_BRIDGE[method + "Wrapped"](options);
         }
 
-        if (options.publicKey.hasOwnProperty('challenge')) {
-            options.publicKey.challenge = __encode(options.publicKey.challenge)
-        }
+        var uuid = crypto.randomUUID()
 
-        if (options.publicKey.hasOwnProperty('user') && options.publicKey.user.hasOwnProperty('id')) {
-            options.publicKey.user.id = __encode(options.publicKey.user.id)
-        }
+        var promise = new Promise((resolve, reject) => {
+            JAVASCRIPT_BRIDGE.__promise_cache__[uuid] = {'resolve':resolve, 'reject':reject, 'method': method}
 
-        if (options.publicKey.hasOwnProperty('allowCredentials')) {
-            var allowed = options.publicKey.allowCredentials
-            for(var i = 0; i < allowed.length; ++i) {
-                allowed[i].id = __encode(allowed[i].id);
+            if (JAVASCRIPT_BRIDGE.__override_hints.length > 0) {
+                options.publicKey['hints'] = JAVASCRIPT_BRIDGE.__override_hints
             }
-        }
 
-        if (options.publicKey.hasOwnProperty('extensions') &&
-            options.publicKey.extensions.hasOwnProperty('prf') &&
-            options.publicKey.extensions.prf.hasOwnProperty('eval') &&
-            options.publicKey.extensions.prf.eval.hasOwnProperty('first') ) {
-            options.publicKey.extensions.prf.eval.first = __encode(options.publicKey.extensions.prf.eval.first)
-        }
+            if (options.publicKey.hasOwnProperty('challenge')) {
+                options.publicKey.challenge = __encode(options.publicKey.challenge)
+            }
 
-        if (options.publicKey.hasOwnProperty('extensions') &&
-            options.publicKey.extensions.hasOwnProperty('prf') &&
-            options.publicKey.extensions.prf.hasOwnProperty('evalByCredential') ) {
-            for (const k of Object.keys(options.publicKey.extensions.prf.evalByCredential)) {
-                if (options.publicKey.extensions.prf.evalByCredential[k].hasOwnProperty('first')) {
-                    options.publicKey.extensions.prf.evalByCredential[k].first = __encode(
-                        options.publicKey.extensions.prf.evalByCredential[k].first
-                    )
-                }
-                if (options.publicKey.extensions.prf.evalByCredential[k].hasOwnProperty('second')) {
-                    options.publicKey.extensions.prf.evalByCredential[k].second = __encode(
-                        options.publicKey.extensions.prf.evalByCredential[k].second
-                    )
+            if (options.publicKey.hasOwnProperty('user') && options.publicKey.user.hasOwnProperty('id')) {
+                options.publicKey.user.id = __encode(options.publicKey.user.id)
+            }
+
+            if (options.publicKey.hasOwnProperty('allowCredentials')) {
+                var allowed = options.publicKey.allowCredentials
+                for(var i = 0; i < allowed.length; ++i) {
+                    allowed[i].id = __encode(allowed[i].id);
                 }
             }
-        }
 
-        if (options.publicKey.hasOwnProperty('extensions') &&
-            options.publicKey.extensions.hasOwnProperty('prf') &&
-            options.publicKey.extensions.prf.hasOwnProperty('eval') &&
-            options.publicKey.extensions.prf.eval.hasOwnProperty('second') ) {
-            options.publicKey.extensions.prf.eval.second = __encode(options.publicKey.extensions.prf.eval.second)
-        }
+            if (options.publicKey.hasOwnProperty('extensions') &&
+                options.publicKey.extensions.hasOwnProperty('prf') &&
+                options.publicKey.extensions.prf.hasOwnProperty('eval') &&
+                options.publicKey.extensions.prf.eval.hasOwnProperty('first') )
+            {
+                options.publicKey.extensions.prf.eval.first = __encode(options.publicKey.extensions.prf.eval.first)
+            }
+
+            if (options.publicKey.hasOwnProperty('extensions') &&
+                options.publicKey.extensions.hasOwnProperty('prf') &&
+                options.publicKey.extensions.prf.hasOwnProperty('evalByCredential') )
+            {
+                for (const k of Object.keys(options.publicKey.extensions.prf.evalByCredential)) {
+                    if (options.publicKey.extensions.prf.evalByCredential[k].hasOwnProperty('first')) {
+                        options.publicKey.extensions.prf.evalByCredential[k].first = __encode(
+                            options.publicKey.extensions.prf.evalByCredential[k].first)
+                    }
+
+                    if (options.publicKey.extensions.prf.evalByCredential[k].hasOwnProperty('second')) {
+                        options.publicKey.extensions.prf.evalByCredential[k].second = __encode(
+                            options.publicKey.extensions.prf.evalByCredential[k].second)
+                    }
+                }
+            }
+
+            if (options.publicKey.hasOwnProperty('extensions') &&
+                options.publicKey.extensions.hasOwnProperty('prf') &&
+                options.publicKey.extensions.prf.hasOwnProperty('eval') &&
+                options.publicKey.extensions.prf.eval.hasOwnProperty('second') )
+            {
+                options.publicKey.extensions.prf.eval.second = __encode(options.publicKey.extensions.prf.eval.second)
+            }
 
 
-        // sign extension v3 https://yubicolabs.github.io/webauthn-sign-extension/3/#sctn-sign-extension
-        if (options.publicKey.hasOwnProperty('extensions') &&
-            options.publicKey.extensions.hasOwnProperty('sign') &&
-            options.publicKey.extensions.sign.hasOwnProperty('generateKey') &&
-            options.publicKey.extensions.sign.generateKey.hasOwnProperty('tbs') ) {
-            options.publicKey.extensions.sign.generateKey.tbs = __encode(options.publicKey.extensions.sign.generateKey.tbs)
-        }
-        if (options.publicKey.hasOwnProperty('extensions') &&
-            options.publicKey.extensions.hasOwnProperty('sign') &&
-            options.publicKey.extensions.sign.hasOwnProperty('sign') &&
-            options.publicKey.extensions.sign.sign.hasOwnProperty('tbs') ) {
-            options.publicKey.extensions.sign.sign.tbs = __encode(options.publicKey.extensions.sign.sign.tbs)
-        }
-        if (options.publicKey.hasOwnProperty('extensions') &&
-            options.publicKey.extensions.hasOwnProperty('sign') &&
-            options.publicKey.extensions.sign.hasOwnProperty('sign') &&
-            options.publicKey.extensions.sign.sign.hasOwnProperty('keyHandleByCredential')) {
-          for (const k of Object.keys(options.publicKey.extensions.sign.sign.keyHandleByCredential)) {
-              options.publicKey.extensions.sign.sign.keyHandleByCredential[k] = __encode(options.publicKey.extensions.sign.sign.keyHandleByCredential[k]);
-          }
-        }
+            // sign extension v3 https://yubicolabs.github.io/webauthn-sign-extension/3/#sctn-sign-extension
+            if (options.publicKey.hasOwnProperty('extensions') &&
+                options.publicKey.extensions.hasOwnProperty('sign') &&
+                options.publicKey.extensions.sign.hasOwnProperty('generateKey') &&
+                options.publicKey.extensions.sign.generateKey.hasOwnProperty('tbs') )
+            {
+                options.publicKey.extensions.sign.generateKey.tbs = __encode(options.publicKey.extensions.sign.generateKey.tbs)
+            }
 
-        // call bridge, JAVASCRIPT_BRIDGE.__resolve__(uid, ..) or JAVASCRIPT_BRIDGE.__reject__(uid,..) will be called back from android.
-        var options_json = JSON.stringify(options, null, 4)
-        console.log('options:', options_json)
-        JAVASCRIPT_BRIDGE[method](uuid, options_json)
-      })
+            if (options.publicKey.hasOwnProperty('extensions') &&
+                options.publicKey.extensions.hasOwnProperty('sign') &&
+                options.publicKey.extensions.sign.hasOwnProperty('sign') &&
+                options.publicKey.extensions.sign.sign.hasOwnProperty('tbs') )
+            {
+                options.publicKey.extensions.sign.sign.tbs = __encode(options.publicKey.extensions.sign.sign.tbs)
+            }
 
-      return promise
+            if (options.publicKey.hasOwnProperty('extensions') &&
+                options.publicKey.extensions.hasOwnProperty('sign') &&
+                options.publicKey.extensions.sign.hasOwnProperty('sign') &&
+                options.publicKey.extensions.sign.sign.hasOwnProperty('keyHandleByCredential'))
+            {
+                for (const k of Object.keys(options.publicKey.extensions.sign.sign.keyHandleByCredential)) {
+                    options.publicKey.extensions.sign.sign.keyHandleByCredential[k] = __encode(options.publicKey.extensions.sign.sign.keyHandleByCredential[k]);
+                }
+            }
+
+            // call bridge, JAVASCRIPT_BRIDGE.__resolve__(uid, ..) or JAVASCRIPT_BRIDGE.__reject__(uid,..) will be called back from android.
+            var options_json = JSON.stringify(options, null, 4)
+            console.log('options:', options_json)
+            JAVASCRIPT_BRIDGE[method](uuid, options_json)
+        })
+
+        return promise
     }
 }
 

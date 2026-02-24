@@ -37,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.lifecycleScope
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import ch.qos.logback.classic.android.BasicLogcatConfigurator
 import org.siros.wwwallet.bluetooth.BleClientHandler
 import org.siros.wwwallet.bluetooth.BleServerHandler
@@ -221,6 +223,21 @@ private fun createWebViewFactory(
         cacheMode = LOAD_NO_CACHE
         useWideViewPort = true
         loadWithOverviewMode = true
+    }
+
+    // This is needed in order to make WebView support navigator.credentials.get/create
+    // on its own. This way, we only need to intercept the calls with the `security-key` hint, not
+    // any others.
+    if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION)) {
+        WebSettingsCompat.setWebAuthenticationSupport(
+            webView.settings,
+            WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP)
+
+        YOLOLogger.i(webView.tagForLog,
+            "Web authentication support enabled: ${WebSettingsCompat.getWebAuthenticationSupport(webView.settings)}")
+    }
+    else {
+        YOLOLogger.e(webView.tagForLog, "WebView does not support passkeys.")
     }
 
     webView.webViewClient = webViewClient

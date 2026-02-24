@@ -39,33 +39,19 @@ class WalletJsBridge(
             val jsonHints = publicKey.getJSONArray("hints")
             val hints = jsonHints.toList().mapNotNull { it as? String }
 
-            var selectedContainer: Container? = null
-            for (hint in hints) {
-                selectedContainer =
-                    when (hint) {
-                        "security-key" -> securityKeyCredentialsContainer
-                        "client-device" -> clientDeviceCredentialsContainer
-                        "hybrid" -> null // explicitly not supported
-                        else -> {
-                            // error case: unknown hint.
-                            YOLOLogger.e(tagForLog, "Hint '$hint' not supported. Ignoring.")
-                            null
-                        }
-                    }
-
-                if (selectedContainer != null) {
-                    break
-                }
+            if (hints.contains("security-key")) {
+                securityKeyCredentialsContainer
             }
-
-            selectedContainer ?: securityKeyCredentialsContainer
+            else {
+                clientDeviceCredentialsContainer
+            }
         } catch (jsonException: JSONException) {
             Log.i(
                 tagForLog,
-                "'hints' field in credential options not found, defaulting back to 'security-key'.",
+                "'hints' field in credential options not found, defaulting back to 'client-device'.",
                 jsonException,
             )
-            securityKeyCredentialsContainer
+            clientDeviceCredentialsContainer
         }
 
     /**
