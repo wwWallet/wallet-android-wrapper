@@ -13,7 +13,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = namespace
+        applicationId = env("WWWALLET_ANDROID_APPLICATION_ID")
         minSdk = 33
         targetSdk = 36
         versionCode = (property("wallet.versionCode") as String).toInt()
