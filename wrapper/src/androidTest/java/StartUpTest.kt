@@ -16,8 +16,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
 import org.junit.runner.RunWith
-import org.siros.wwwallet.BuildConfig
-import org.siros.wwwallet.MainActivity
 import org.siros.wwwallet.bridging.JSCodeSnippet
 import org.siros.wwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 import java.util.concurrent.CountDownLatch
@@ -115,7 +113,7 @@ class StartUpTest {
                             }
                         }
                     }
-                } catch (th: Throwable) {
+                } catch (_: Throwable) {
                     webNavigator = null
                     latch.countDown()
                 }

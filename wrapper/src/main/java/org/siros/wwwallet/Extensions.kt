@@ -8,6 +8,6 @@ inline val Any?.tagForLog: String
     get() =
         try {
             this?.javaClass?.simpleName ?: "<|>"
-        } catch (th: Throwable) {
+        } catch (_: Throwable) {
             "<||>"
         }

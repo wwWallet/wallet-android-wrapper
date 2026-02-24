@@ -41,12 +41,12 @@ class DebugMenuHandler(
     private var maxSeparatorsCount = 1
     private val actions: Map<String, (JSExecutor) -> Unit> =
         mapOf(
-            USE_DEMO_BASE_URL to { js -> browseTo("https://demo.wwwallet.org/") },
-            USE_FUNKE_BASE_URL to { js -> browseTo("https://funke.wwwallet.org/") },
-            USE_QA_BASE_URL to { js -> browseTo("https://qa.wwwallet.org/") },
-            CUSTOM_BASE_URL to { js -> updateBaseUrl() },
+            USE_DEMO_BASE_URL to { _ -> browseTo("https://demo.wwwallet.org/") },
+            USE_FUNKE_BASE_URL to { _ -> browseTo("https://funke.wwwallet.org/") },
+            USE_QA_BASE_URL to { _ -> browseTo("https://qa.wwwallet.org/") },
+            CUSTOM_BASE_URL to { _ -> updateBaseUrl() },
             LIST_SEPARATOR * maxSeparatorsCount++ to {},
-            OPEN_CONFIG to { js -> openPasskeyProviderSettings() },
+            OPEN_CONFIG to { _ -> openPasskeyProviderSettings() },
             LIST_SEPARATOR * maxSeparatorsCount++ to {},
             SHOW_LOGS to { js ->
                 js("$JAVASCRIPT_BRIDGE_NAME.__captured_logs__") { logsJson ->
@@ -88,7 +88,7 @@ class DebugMenuHandler(
             .setTitle("Debug Menu (v${BuildConfig.VERSION_NAME})")
             .setItems(
                 items,
-            ) { dialog, which ->
+            ) { _, which ->
                 val key = items[which]
                 if (key in actions) {
                     jsExecutor("console.log(`Debug Menu $key pressed`)") {}
@@ -96,10 +96,10 @@ class DebugMenuHandler(
                 } else {
                     jsExecutor("window.alert('Option $which (${items[which]}) is not implemented.')") {}
                 }
-            }.setPositiveButton(android.R.string.ok) { dialog, which ->
+            }.setPositiveButton(android.R.string.ok) { dialog, _ ->
                 jsExecutor("console.log('OK')") {}
                 dialog.dismiss()
-            }.setNegativeButton(android.R.string.cancel) { dialog, which ->
+            }.setNegativeButton(android.R.string.cancel) { dialog, _ ->
                 jsExecutor("console.log('Not OK')") {}
                 dialog.dismiss()
             }.show()
@@ -126,9 +126,9 @@ class DebugMenuHandler(
             ) { dialog, which ->
                 copyToClipboard(logs[which])
                 dialog.dismiss()
-            }.setPositiveButton(android.R.string.ok) { dialog, which ->
+            }.setPositiveButton(android.R.string.ok) { dialog, _ ->
                 dialog.dismiss()
-            }.setNeutralButton("📋") { dialog, which ->
+            }.setNeutralButton("📋") { _, _ ->
                 copyToClipboard(logs.joinToString("\n"))
             }.show()
     }
@@ -168,7 +168,7 @@ class DebugMenuHandler(
     ) {
         val intent =
             Intent(Intent.ACTION_SEND).apply {
-                setType("text/html")
+                type = "text/html"
                 putExtra(Intent.EXTRA_EMAIL, arrayOf("googledeveloper@siros.org"))
                 putExtra(Intent.EXTRA_SUBJECT, title)
                 putExtra(Intent.EXTRA_HTML_TEXT, body)
