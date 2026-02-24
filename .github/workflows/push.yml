@@ -71,8 +71,10 @@ jobs:
       - name: Test
         run: ./gradlew assemble check
 
-      - name: Fingerprints
-        run: ./gradlew checkFingerPrints
+# Disabled, until new production home is up and running.
+# TODO: Enable again, as soon as production environment is available.
+#      - name: Fingerprints
+#        run: ./gradlew checkFingerPrints
 
       - name: Run Connected Tests
         uses: reactivecircus/android-emulator-runner@v2
