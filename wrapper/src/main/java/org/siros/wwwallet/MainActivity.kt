@@ -228,6 +228,7 @@ private fun createWebViewFactory(
     // This is needed in order to make WebView support navigator.credentials.get/create
     // on its own. This way, we only need to intercept the calls with the `security-key` hint, not
     // any others.
+    // See https://developer.android.com/identity/sign-in/credential-manager-webview
     if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION)) {
         WebSettingsCompat.setWebAuthenticationSupport(
             webView.settings,
