@@ -153,7 +153,7 @@ this app, the iOS wallet proposal and our custom build of Firefox.
 The Yubico SDK for Android [yubkit-android]((https://github.com/Yubico/yubikit-android) is used heavily for
 communicating, signing and verifying strong security when presenting documents or registering and signing into the
 wallet frontend.
-See [NavigatorCredentialsContainerYubico](src/main/java/io/yubicolabs/wwwwallet/credentials/NavigatorCredentialsContainerYubico.kt),
+See [NavigatorCredentialsContainerYubico](wrapper/src/main/java/org/siros/wwwallet/credentials/YubicoContainer.kt),
 how the sdk is integrated.
 
 Alternatives for using Yubico's SDK was to either use the Android Platform FIDO2/ Webauthn implementation, but sadly
@@ -193,9 +193,9 @@ into other existing systems.
 Therefore, we decided to implement the BLE communication from scratch and offer the wwwallet frontend a simple API for
 interacting with BLE: The idea being that the Android wrapper abstracts the BLE communication, and lets the frontend
 simply ask the wrapper to send binary data through it. This way the frontend doesn't need to know the internalities of the BLE
-communication, but needs to be able to convert the wwwwallet contents into a binary representation and communicate
+communication, but needs to be able to convert the wwwallet contents into a binary representation and communicate
 securely with the verifier. It resolves into a clear separation between transport (the BLE wrapper implementation) and
-communication (the wwwwallet).
+communication (the wwwallet).
 
 An overview of the API offered to the JS frontend is this:
 
@@ -243,7 +243,7 @@ available to the wrapper and frontend.
 Inside the wrapper we already intercept JS calls to `navigator.credentials.create` and our own custom `nativeWrapper.*`,
 and additionally it is easy to intercept calls to open / request assets and new websites. In order to make the wrapper
 work offline, we have to intercept known url requests and deliver the known files. It is not dissimilar to hosting your
-own localhost version of the wwwwallet on Android, but without the actual webserver hosting part.
+own localhost version of the wwwallet on Android, but without the actual webserver hosting part.
 
 
 ### Alternatives

@@ -1,0 +1,8 @@
+package org.siros.wwwallet.credentials
+
+fun getClientOptions(
+    type: String,
+    challenge: String,
+    origin: String,
+) = "{\"type\":\"$type\",\"challenge\":\"$challenge\",\"origin\":\"https://$origin\"}"
+    .toByteArray()

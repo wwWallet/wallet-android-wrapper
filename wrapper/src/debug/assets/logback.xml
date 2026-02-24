@@ -4,7 +4,7 @@
 
     <appender
         name="logcat"
-        class="io.yubicolabs.wwwwallet.logging.Logger">
+        class="org.siros.wwwallet.logging.Logger">
         <encoder>
             <pattern>%msg</pattern>
         </encoder>

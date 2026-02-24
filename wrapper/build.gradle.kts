@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "io.yubicolabs.wwwwallet"
+    namespace = "org.siros.wwwallet"
     compileSdk = 36
 
     defaultConfig {

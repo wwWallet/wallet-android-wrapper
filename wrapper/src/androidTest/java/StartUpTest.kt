@@ -1,4 +1,4 @@
-package com.yubico.ykbrowser
+package org.siros.wwwallet
 
 import android.view.View
 import android.webkit.WebView
@@ -8,10 +8,6 @@ import androidx.test.espresso.matcher.ViewMatchers.withClassName
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import io.yubicolabs.wwwwallet.BuildConfig
-import io.yubicolabs.wwwwallet.MainActivity
-import io.yubicolabs.wwwwallet.bridging.JSCodeSnippet
-import io.yubicolabs.wwwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 import org.hamcrest.CoreMatchers.containsString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -20,6 +16,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
 import org.junit.runner.RunWith
+import org.siros.wwwallet.BuildConfig
+import org.siros.wwwallet.MainActivity
+import org.siros.wwwallet.bridging.JSCodeSnippet
+import org.siros.wwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -39,7 +39,7 @@ class StartUpTest {
     @Test
     fun appHasCorrectPackage() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("io.yubicolabs.wwwwallet", appContext.packageName)
+        assertTrue(appContext.packageName.startsWith("org.siros"))
     }
 
     @Test

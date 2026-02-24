@@ -7,8 +7,8 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:identifier="shortcut_open_demo"
-            android:targetClass="io.yubicolabs.wwwwallet.MainActivity"
-            android:targetPackage="io.yubicolabs.wwwwallet" />
+            android:targetClass="org.siros.wwwallet.MainActivity"
+            android:targetPackage="org.siros.wwwallet" />
         <categories android:name="android.shortcut.conversation" />
         <capability-binding android:key="actions.intent.CREATE_MESSAGE" />
     </shortcut>
@@ -20,8 +20,8 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:identifier="shortcut_open_funke"
-            android:targetClass="io.yubicolabs.wwwwallet.MainActivity"
-            android:targetPackage="io.yubicolabs.wwwwallet" />
+            android:targetClass="org.siros.wwwallet.MainActivity"
+            android:targetPackage="org.siros.wwwallet" />
         <categories android:name="android.shortcut.conversation" />
         <capability-binding android:key="actions.intent.CREATE_MESSAGE" />
     </shortcut>
@@ -33,8 +33,8 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:identifier="shortcut_open_qa"
-            android:targetClass="io.yubicolabs.wwwwallet.MainActivity"
-            android:targetPackage="io.yubicolabs.wwwwallet" />
+            android:targetClass="org.siros.wwwallet.MainActivity"
+            android:targetPackage="org.siros.wwwallet" />
         <categories android:name="android.shortcut.conversation" />
         <capability-binding android:key="actions.intent.CREATE_MESSAGE" />
     </shortcut>
@@ -46,8 +46,8 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:identifier="shortcut_open_custom"
-            android:targetClass="io.yubicolabs.wwwwallet.MainActivity"
-            android:targetPackage="io.yubicolabs.wwwwallet" />
+            android:targetClass="org.siros.wwwallet.MainActivity"
+            android:targetPackage="org.siros.wwwallet" />
         <categories android:name="android.shortcut.conversation" />
         <capability-binding android:key="actions.intent.CREATE_MESSAGE" />
     </shortcut>
