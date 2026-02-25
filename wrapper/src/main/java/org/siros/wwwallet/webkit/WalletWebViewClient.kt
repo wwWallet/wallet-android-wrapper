@@ -1,44 +1,28 @@
 package org.siros.wwwallet.webkit
 
-import android.app.Activity
 import android.content.Intent
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.widget.Toast
 import androidx.webkit.WebResourceErrorCompat
 import androidx.webkit.WebViewClientCompat
 import androidx.webkit.WebViewFeature
-import org.siros.wwwallet.BuildConfig
+import org.siros.wwwallet.MainActivity
 import org.siros.wwwallet.bridging.WalletJsBridge
-
-private val URL_IGNORE_LIST: Array<String> =
-    arrayOf(
-        "github",
-        "demo-issuer",
-        "demo-verifier",
-        "qa-issuer",
-        "qa-verifier",
-    )
+import java.net.URI
 
 class WalletWebViewClient(
-    private val activity: Activity,
+    private val activity: MainActivity,
     private val onErrorReceived: (description: String) -> Unit,
 ) : WebViewClientCompat() {
     override fun shouldOverrideUrlLoading(
         view: WebView,
         request: WebResourceRequest,
     ): Boolean {
-        if (
-            URL_IGNORE_LIST.any {
-                request.url.host
-                    ?.lowercase()
-                    ?.startsWith(it) == true
-            }
-        ) {
-            if (BuildConfig.DEBUG) {
-                Toast.makeText(view.context, "Opening '${request.url}' app chooser.", Toast.LENGTH_SHORT).show()
-            }
+        val baseUrl = URI(activity.vm.url.value)
 
+        // Open all foreign web pages and app schemes like "eid" for the AusweisApp
+        // externally. Only wwWallet code is allowed inside the app.
+        if (request.url.scheme != baseUrl.scheme || request.url.host != baseUrl.host) {
             activity.startActivity(Intent(Intent.ACTION_VIEW, request.url))
             return true
         }
