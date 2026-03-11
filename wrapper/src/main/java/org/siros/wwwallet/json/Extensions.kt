@@ -4,12 +4,11 @@ import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
 import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
-import org.siros.wwwallet.logging.YOLOLogger
-import org.siros.wwwallet.tagForLog
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import kotlin.collections.iterator
+import org.siros.wwwallet.logging.YOLOLogger
+import org.siros.wwwallet.tagForLog
 
 fun ByteArray.b64(): String = encodeToString(this, NO_WRAP or NO_PADDING or URL_SAFE)
 

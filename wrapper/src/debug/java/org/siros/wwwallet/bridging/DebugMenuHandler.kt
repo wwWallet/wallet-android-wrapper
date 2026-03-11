@@ -10,11 +10,11 @@ import androidx.core.net.toUri
 import androidx.core.text.parseAsHtml
 import androidx.credentials.CredentialManager
 import org.json.JSONArray
-import org.siros.wwwallet.json.toList
-import org.siros.wwwallet.logging.YOLOLogger
 import org.siros.wwwallet.BuildConfig
 import org.siros.wwwallet.R
 import org.siros.wwwallet.bridging.WalletJsBridge.Companion.JAVASCRIPT_BRIDGE_NAME
+import org.siros.wwwallet.json.toList
+import org.siros.wwwallet.logging.YOLOLogger
 import java.net.URLEncoder
 
 private const val USE_DEMO_BASE_URL = "Use Demo Base URL (default)"
@@ -182,8 +182,7 @@ class DebugMenuHandler(
         val combinedLogs =
             JSONArray(logsJson)
                 .toList()
-                .map { "$it" } +
-                    YOLOLogger.messages()
+                .map { "$it" } + YOLOLogger.messages()
 
         return combinedLogs.sorted()
     }

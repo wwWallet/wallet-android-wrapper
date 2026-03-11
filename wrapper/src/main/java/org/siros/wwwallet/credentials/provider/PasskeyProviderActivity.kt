@@ -193,8 +193,11 @@ class PasskeyProviderActivity : ComponentActivity() {
             val publicKeyRequest =
                 request.callingRequest as CreatePublicKeyCredentialRequest
 
-            val publicKey = JSONObject(publicKeyRequest.candidateQueryData.getString(
-                BUNDLE_KEY_REQUEST, "{}"))
+            val publicKey =
+                JSONObject(
+                    publicKeyRequest.candidateQueryData.getString(BUNDLE_KEY_REQUEST, "{}"),
+                )
+
             val requestJson =
                 JSONObject(
                     mutableMapOf("publicKey" to publicKey),

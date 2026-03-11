@@ -40,6 +40,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import ch.qos.logback.classic.android.BasicLogcatConfigurator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.siros.wwwallet.bluetooth.BleClientHandler
 import org.siros.wwwallet.bluetooth.BleServerHandler
 import org.siros.wwwallet.bridging.DebugMenuHandler
@@ -49,9 +52,6 @@ import org.siros.wwwallet.credentials.YubicoContainer
 import org.siros.wwwallet.logging.YOLOLogger
 import org.siros.wwwallet.webkit.WalletWebChromeClient
 import org.siros.wwwallet.webkit.WalletWebViewClient
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import ui.EnterBaseUrlDialog
 
 class MainActivity : ComponentActivity() {
@@ -149,8 +149,15 @@ class MainActivity : ComponentActivity() {
                             title = stringResource(R.string.shortcut_open_custom),
                             hint =
                                 when (reason) {
-                                    is MainViewModel.UpdateReason.WebpageError -> stringResource(R.string.shortcut_open_custom_by_error, reason.errorMessage)
-                                    is MainViewModel.UpdateReason.DeeplinkRequest -> stringResource(R.string.shortcut_open_custom_from_deeplink)
+                                    is MainViewModel.UpdateReason.WebpageError ->
+                                        stringResource(
+                                            R.string.shortcut_open_custom_by_error,
+                                            reason.errorMessage,
+                                        )
+
+                                    is MainViewModel.UpdateReason.DeeplinkRequest ->
+                                        stringResource(R.string.shortcut_open_custom_from_deeplink)
+
                                     is MainViewModel.UpdateReason.UserRequest -> stringResource(R.string.shortcut_open_custom_by_user)
                                 },
                             currentBaseUrl = runBlocking { vm.getBaseUrl() },
@@ -232,12 +239,16 @@ private fun createWebViewFactory(
     if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION)) {
         WebSettingsCompat.setWebAuthenticationSupport(
             webView.settings,
-            WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP)
+            WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP,
+        )
 
-        YOLOLogger.i(webView.tagForLog,
-            "Web authentication support enabled: ${WebSettingsCompat.getWebAuthenticationSupport(webView.settings)}")
-    }
-    else {
+        YOLOLogger.i(
+            webView.tagForLog,
+            "Web authentication support enabled: ${
+                WebSettingsCompat.getWebAuthenticationSupport(webView.settings)
+            }",
+        )
+    } else {
         YOLOLogger.e(webView.tagForLog, "WebView does not support passkeys.")
     }
 

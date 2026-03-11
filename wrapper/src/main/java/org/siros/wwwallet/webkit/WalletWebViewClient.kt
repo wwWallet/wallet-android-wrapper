@@ -30,7 +30,10 @@ class WalletWebViewClient(
         return super.shouldOverrideUrlLoading(view, request)
     }
 
-    override fun onPageCommitVisible(view: WebView, url: String) {
+    override fun onPageCommitVisible(
+        view: WebView,
+        url: String,
+    ) {
         super.onPageCommitVisible(view, url)
 
         view.evaluateJavascript("${WalletJsBridge.JAVASCRIPT_BRIDGE_NAME}.inject()") {}

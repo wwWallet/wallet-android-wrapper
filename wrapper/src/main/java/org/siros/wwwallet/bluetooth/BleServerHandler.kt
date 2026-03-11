@@ -82,10 +82,7 @@ class BleServerHandler(
         failure: () -> Unit,
     ) {
         val serviceUuid = UUID.fromString(rawServiceUuid)
-        val gattServer = manager.openGattServer(
-                activity,
-                callback,
-            )
+        val gattServer = manager.openGattServer(activity, callback)
 
         if (gattServer == null) {
             YOLOLogger.e(tagForLog, "Could not create gatt server.")

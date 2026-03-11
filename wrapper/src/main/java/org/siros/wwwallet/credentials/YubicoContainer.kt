@@ -33,12 +33,12 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions
 import com.yubico.yubikit.fido.webauthn.SerializationType
+import kotlinx.coroutines.Dispatchers
+import org.json.JSONObject
 import org.siros.wwwallet.json.getOrNull
 import org.siros.wwwallet.json.toMap
 import org.siros.wwwallet.logging.YOLOLogger
 import org.siros.wwwallet.tagForLog
-import kotlinx.coroutines.Dispatchers
-import org.json.JSONObject
 import kotlin.coroutines.EmptyCoroutineContext
 
 sealed class Operation(
@@ -188,17 +188,18 @@ class YubicoContainer(
         val publicKey = createOptions.publicKey!!
         val kitOptions = PublicKeyCredentialCreationOptions.fromMap(publicKey.toMap())
         val domain = publicKey.rp?.id ?: ""
-        val provider = ClientDataProvider.fromClientDataJson(
-            getClientOptions(
-                type = "webauthn.create",
-                origin = domain,
-                challenge =
-                    encodeToString(
-                        kitOptions.challenge,
-                        NO_PADDING or NO_WRAP or URL_SAFE,
-                    ),
+        val provider =
+            ClientDataProvider.fromClientDataJson(
+                getClientOptions(
+                    type = "webauthn.create",
+                    origin = domain,
+                    challenge =
+                        encodeToString(
+                            kitOptions.challenge,
+                            NO_PADDING or NO_WRAP or URL_SAFE,
+                        ),
+                ),
             )
-        )
         val enterprise = null
         val state = null
 
@@ -216,7 +217,11 @@ class YubicoContainer(
             YOLOLogger.i(tagForLog, "Done, created $result.")
             operation.success(JSONObject(result.toMap()))
         } catch (ctap: CtapException) {
-            YOLOLogger.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
+            YOLOLogger.e(
+                tagForLog,
+                "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.",
+                ctap,
+            )
             operation.failure(ctap)
         } catch (th: Throwable) {
             YOLOLogger.e(tagForLog, "Unexpected error: '${th.message}'.", th)
@@ -237,7 +242,7 @@ class YubicoContainer(
                 HmacSecretExtension(),
                 MinPinLengthExtension(),
                 LargeBlobExtension(),
-            )
+            ),
         )
 
     private fun getWithDevice(
@@ -251,17 +256,18 @@ class YubicoContainer(
         val publicKey = getOptions.publicKey!!
         val kitOptions = PublicKeyCredentialRequestOptions.fromMap(publicKey.toMap())
         val domain = publicKey.rpId ?: ""
-        val provider = ClientDataProvider.fromClientDataJson(
-            getClientOptions(
-                type = "webauthn.get",
-                origin = domain,
-                challenge =
-                    encodeToString(
-                        kitOptions.challenge,
-                        NO_PADDING or NO_WRAP or URL_SAFE,
-                    ),
+        val provider =
+            ClientDataProvider.fromClientDataJson(
+                getClientOptions(
+                    type = "webauthn.get",
+                    origin = domain,
+                    challenge =
+                        encodeToString(
+                            kitOptions.challenge,
+                            NO_PADDING or NO_WRAP or URL_SAFE,
+                        ),
+                ),
             )
-        )
         val enterprise = null
         try {
             val result =
@@ -276,7 +282,11 @@ class YubicoContainer(
             YOLOLogger.i(tagForLog, "Done, got $result.")
             operation.success(JSONObject(result.toMap()))
         } catch (ctap: CtapException) {
-            YOLOLogger.e(tagForLog, "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.", ctap)
+            YOLOLogger.e(
+                tagForLog,
+                "Protocol exception: '${ctap.ctapError.toHumanReadable()}'.",
+                ctap,
+            )
             operation.failure(ctap)
         } catch (multiple: MultipleAssertionsAvailable) {
             YOLOLogger.i(tagForLog, "Found several assertions. User selection needed.")

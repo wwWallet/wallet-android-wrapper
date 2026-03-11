@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import org.siros.wwwallet.BuildConfig
 import org.siros.wwwallet.bluetooth.BleClientHandler
 import org.siros.wwwallet.bluetooth.BleServerHandler
 import org.siros.wwwallet.bluetooth.ServiceCharacteristic
@@ -16,7 +17,6 @@ import org.siros.wwwallet.credentials.Container
 import org.siros.wwwallet.json.toList
 import org.siros.wwwallet.logging.YOLOLogger
 import org.siros.wwwallet.tagForLog
-import org.siros.wwwallet.BuildConfig
 import kotlin.coroutines.EmptyCoroutineContext
 
 class WalletJsBridge(
@@ -41,8 +41,7 @@ class WalletJsBridge(
 
             if (hints.contains("security-key")) {
                 securityKeyCredentialsContainer
-            }
-            else {
+            } else {
                 clientDeviceCredentialsContainer
             }
         } catch (jsonException: JSONException) {
@@ -116,38 +115,40 @@ class WalletJsBridge(
         options: String,
     ) {
         val mappedOptions = JSONObject(options)
-        YOLOLogger.i(tagForLog, "$JAVASCRIPT_BRIDGE_NAME.create($promiseUuid, ${mappedOptions.toString(2)}) called.")
+        YOLOLogger.i(
+            tagForLog,
+            "$JAVASCRIPT_BRIDGE_NAME.create($promiseUuid, ${mappedOptions.toString(2)}) called.",
+        )
 
-        credentialsContainerByOption(mappedOptions)
-            .create(
-                options = mappedOptions,
-                failureCallback = { th ->
-                    YOLOLogger.e(tagForLog, "Creation failed.", th)
+        credentialsContainerByOption(mappedOptions).create(
+            options = mappedOptions,
+            failureCallback = { th ->
+                YOLOLogger.e(tagForLog, "Creation failed.", th)
 
-                    dispatcher.dispatch(EmptyCoroutineContext) {
-                        webView.evaluateJavascript(
-                            """
-                            console.log('credential creation failed', JSON.stringify("$th"))
-                            alert('Credential creation failed: ' + JSON.stringify("${th.localizedMessage}"))
-                            $JAVASCRIPT_BRIDGE_NAME.__reject__("$promiseUuid", JSON.stringify("$th"));
-                            """.trimIndent(),
-                        ) {}
-                    }
-                },
-                successCallback = { response ->
-                    YOLOLogger.i(tagForLog, "Creation succeeded with $response.")
+                dispatcher.dispatch(EmptyCoroutineContext) {
+                    webView.evaluateJavascript(
+                        """
+                        console.log('credential creation failed', JSON.stringify("$th"))
+                        alert('Credential creation failed: ' + JSON.stringify("${th.localizedMessage}"))
+                        $JAVASCRIPT_BRIDGE_NAME.__reject__("$promiseUuid", JSON.stringify("$th"));
+                        """.trimIndent(),
+                    ) {}
+                }
+            },
+            successCallback = { response ->
+                YOLOLogger.i(tagForLog, "Creation succeeded with $response.")
 
-                    dispatcher.dispatch(EmptyCoroutineContext) {
-                        webView.evaluateJavascript(
-                            """
-                            var response = JSON.parse('$response')
-                            console.log('credential created', response)
-                            $JAVASCRIPT_BRIDGE_NAME.__resolve__("$promiseUuid", response);
-                            """.trimIndent(),
-                        ) {}
-                    }
-                },
-            )
+                dispatcher.dispatch(EmptyCoroutineContext) {
+                    webView.evaluateJavascript(
+                        """
+                        var response = JSON.parse('$response')
+                        console.log('credential created', response)
+                        $JAVASCRIPT_BRIDGE_NAME.__resolve__("$promiseUuid", response);
+                        """.trimIndent(),
+                    ) {}
+                }
+            },
+        )
     }
 
     @JavascriptInterface
@@ -160,36 +161,35 @@ class WalletJsBridge(
 
         val mappedOptions = JSONObject(options)
         val container = credentialsContainerByOption(mappedOptions)
-        container
-            .get(
-                options = mappedOptions,
-                failureCallback = { th ->
-                    YOLOLogger.e(tagForLog, "Get failed.", th)
+        container.get(
+            options = mappedOptions,
+            failureCallback = { th ->
+                YOLOLogger.e(tagForLog, "Get failed.", th)
 
-                    dispatcher.dispatch(EmptyCoroutineContext) {
-                        webView.evaluateJavascript(
-                            """
-                            console.log('credential getting failed', JSON.stringify("$th"))
-                            alert('Credential getting failed: ' + JSON.stringify("${th.localizedMessage}"))
-                            $JAVASCRIPT_BRIDGE_NAME.__reject__("$promiseUuid", JSON.stringify("$th"));
-                            """.trimIndent(),
-                        ) {}
-                    }
-                },
-                successCallback = { response ->
-                    YOLOLogger.i(tagForLog, "Get succeeded with $response.")
+                dispatcher.dispatch(EmptyCoroutineContext) {
+                    webView.evaluateJavascript(
+                        """
+                        console.log('credential getting failed', JSON.stringify("$th"))
+                        alert('Credential getting failed: ' + JSON.stringify("${th.localizedMessage}"))
+                        $JAVASCRIPT_BRIDGE_NAME.__reject__("$promiseUuid", JSON.stringify("$th"));
+                        """.trimIndent(),
+                    ) {}
+                }
+            },
+            successCallback = { response ->
+                YOLOLogger.i(tagForLog, "Get succeeded with $response.")
 
-                    dispatcher.dispatch(EmptyCoroutineContext) {
-                        webView.evaluateJavascript(
-                            """
-                            var response = JSON.parse('$response')
-                            console.log('credential getted', response)
-                            $JAVASCRIPT_BRIDGE_NAME.__resolve__("$promiseUuid", response);
-                            """.trimIndent(),
-                        ) {}
-                    }
-                },
-            )
+                dispatcher.dispatch(EmptyCoroutineContext) {
+                    webView.evaluateJavascript(
+                        """
+                        var response = JSON.parse('$response')
+                        console.log('credential getted', response)
+                        $JAVASCRIPT_BRIDGE_NAME.__resolve__("$promiseUuid", response);
+                        """.trimIndent(),
+                    ) {}
+                }
+            },
+        )
     }
 
     @JavascriptInterface
