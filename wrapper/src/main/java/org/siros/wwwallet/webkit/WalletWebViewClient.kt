@@ -23,6 +23,20 @@ class WalletWebViewClient(
         // Open all foreign web pages and app schemes like "eid" for the AusweisApp
         // externally. Only wwWallet code is allowed inside the app.
         if (request.url.scheme != baseUrl.scheme || request.url.host != baseUrl.host) {
+            // Restrict the schemes we are willing to hand to startActivity.
+            // Without this guard a page rendered inside the wallet WebView can
+            // fire arbitrary `intent://`, `content://`, `file://`, or
+            // `javascript:` URLs at the host activity, a known Android-WebView
+            // intent-smuggling / deep-link attack surface (CWE-939).
+            val scheme = request.url.scheme?.lowercase()
+            val allowed = scheme == "https" ||
+                scheme == "http" ||
+                scheme == "eid" ||
+                scheme == "tel" ||
+                scheme == "mailto"
+            if (!allowed) {
+                return true
+            }
             activity.startActivity(Intent(Intent.ACTION_VIEW, request.url))
             return true
         }
