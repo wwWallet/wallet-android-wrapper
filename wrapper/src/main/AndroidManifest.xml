@@ -39,6 +39,7 @@
             android:name=".MainActivity"
             android:configChanges="keyboard|keyboardHidden"
             android:exported="true"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Wwwallet">
 
             <intent-filter>
